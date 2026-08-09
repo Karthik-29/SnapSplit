@@ -1,0 +1,125 @@
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #f8fafc;
+  color: #111827;
+}
+
+.app-shell {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+nav a {
+  margin-right: 12px;
+  text-decoration: none;
+  color: #1f2937;
+}
+
+nav a:hover {
+  color: #2563eb;
+}
+
+.auth-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.auth-controls button {
+  min-width: 150px;
+}
+
+section {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+}
+
+input[type='text'],
+input[type='number'] {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+button,
+.button {
+  background: #2563eb;
+  border: none;
+  color: white;
+  padding: 10px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.button-secondary {
+  background: #6b7280;
+}
+
+button:hover,
+.button:hover,
+.button-secondary:hover {
+  background: #1d4ed8;
+}
+
+section + .section-actions {
+  margin-top: 24px;
+}
+
+.receipt-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 16px;
+}
+
+.receipt-table th,
+.receipt-table td {
+  padding: 12px 10px;
+  border-bottom: 1px solid #e5e7eb;
+  text-align: left;
+}
+
+.receipt-summary,
+.summary-grid {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 16px;
+}
+
+.participant-add {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.section-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.receipt-preview img {
+  max-width: 100%;
+  border-radius: 12px;
+  margin-top: 16px;
+}
+
+.card {
+  background: #f1f5f9;
+  border-radius: 12px;
+  padding: 20px;
+  margin-top: 16px;
+}
