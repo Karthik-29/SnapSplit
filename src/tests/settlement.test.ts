@@ -9,9 +9,9 @@ const items: BillItem[] = [
 ];
 
 const participants = [
-  { id: 'user-1', name: 'Karthik', paidAmount: 600 },
-  { id: 'user-2', name: 'Rahul', paidAmount: 0 },
-  { id: 'user-3', name: 'Amit', paidAmount: 0 },
+  { id: 'user-1', name: 'Karthik' },
+  { id: 'user-2', name: 'Rahul' },
+  { id: 'user-3', name: 'Amit' },
 ];
 
 const itemClaims: ItemClaim[] = [
@@ -35,13 +35,10 @@ describe('calculateBillResults', () => {
 
     expect(result.totalBill).toBe(600);
     expect(result.participantSummaries).toEqual([
-      { participantId: 'user-1', name: 'Karthik', paid: 600, share: 260, net: 340 },
-      { participantId: 'user-2', name: 'Rahul', paid: 0, share: 260, net: -260 },
-      { participantId: 'user-3', name: 'Amit', paid: 0, share: 80, net: -80 },
+      { participantId: 'user-1', name: 'Karthik', share: 260 },
+      { participantId: 'user-2', name: 'Rahul', share: 260 },
+      { participantId: 'user-3', name: 'Amit', share: 80 },
     ]);
-    expect(result.settlements).toEqual([
-      { from: 'Amit', to: 'Karthik', amount: 80 },
-      { from: 'Rahul', to: 'Karthik', amount: 260 },
-    ]);
+    expect(result.settlements).toEqual([]);
   });
 });

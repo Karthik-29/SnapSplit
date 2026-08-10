@@ -3,7 +3,6 @@ import { BillItem } from '../receipt/models';
 export type Participant = {
   id: string;
   name: string;
-  paidAmount: number;
 };
 
 export type ClaimMode = 'individual' | 'shared';
@@ -18,9 +17,7 @@ export type ItemClaim = {
 export type ParticipantSummary = {
   participantId: string;
   name: string;
-  paid: number;
   share: number;
-  net: number;
 };
 
 export type SettlementLine = {
@@ -31,12 +28,17 @@ export type SettlementLine = {
 
 export type BillCalculationResult = {
   totalBill: number;
+  subtotal?: number;
+  total?: number;
+  tax?: number;
   participantSummaries: ParticipantSummary[];
   settlements: SettlementLine[];
 };
 
 export type BillState = {
   receiptItems: BillItem[];
+  receiptSubtotal?: number;
+  receiptTotal?: number;
   participants: Participant[];
   itemClaims: ItemClaim[];
 };

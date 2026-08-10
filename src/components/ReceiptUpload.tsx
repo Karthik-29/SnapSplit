@@ -12,13 +12,13 @@ function ReceiptUpload() {
   const [error, setError] = useState<string | null>(null);
   const [parsedItemCount, setParsedItemCount] = useState<number | null>(null);
 
-  const applyParsedItems = (items: BillItem[]) => {
+  const applyParsedItems = (items: BillItem[], totals?: { subtotal?: number; total?: number }) => {
     if (items.length === 0) {
       setError('No receipt items could be parsed.');
       return;
     }
 
-    setBillItems(items);
+    setBillItems(items, totals);
   };
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -36,7 +36,7 @@ function ReceiptUpload() {
       const ocrResult = await realReceiptOCR.extract(file);
       const parsedReceipt = parseReceiptData(ocrResult);
       setParsedItemCount(parsedReceipt.items.length);
-      applyParsedItems(parsedReceipt.items);
+      applyParsedItems(parsedReceipt.items, { subtotal: parsedReceipt.subtotal, total: parsedReceipt.total });
     } catch (err) {
       setParsedItemCount(0);
       setError('Failed to parse receipt.');

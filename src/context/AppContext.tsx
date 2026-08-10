@@ -7,9 +7,8 @@ import { BillState, ItemClaim, Participant } from '../bill/models';
 export type AppContextValue = {
   state: BillState;
   addParticipant: (name: string) => void;
-  updateParticipantPaid: (id: string, paidAmount: number) => void;
   updateBillItem: (item: BillItem) => void;
-  setBillItems: (items: BillItem[]) => void;
+  setBillItems: (items: BillItem[], receiptTotals?: { subtotal?: number; total?: number }) => void;
   addBillItem: () => void;
   removeBillItem: (itemId: string) => void;
   updateItemClaim: (claim: ItemClaim) => void;
@@ -19,9 +18,9 @@ export type AppContextValue = {
 const initialItems: BillItem[] = [];
 
 const defaultParticipants: Participant[] = [
-  { id: 'user-1', name: 'Karthik', paidAmount: 1240 },
-  { id: 'user-2', name: 'Rahul', paidAmount: 0 },
-  { id: 'user-3', name: 'Amit', paidAmount: 0 },
+  { id: 'user-1', name: 'Karthik' },
+  { id: 'user-2', name: 'Rahul' },
+  { id: 'user-3', name: 'Amit' },
 ];
 
 const initialClaims: ItemClaim[] = [];
@@ -32,10 +31,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [items, setItems] = useState<BillItem[]>(initialItems);
   const [participants, setParticipants] = useState<Participant[]>(defaultParticipants);
   const [itemClaims, setItemClaims] = useState<ItemClaim[]>(initialClaims);
+  const [receiptSubtotal, setReceiptSubtotal] = useState<number | undefined>(undefined);
+  const [receiptTotal, setReceiptTotal] = useState<number | undefined>(undefined);
 
   const addParticipant = (name: string) => {
     const id = `user-${Date.now()}`;
-    const nextParticipants = [...participants, { id, name, paidAmount: 0 }];
+    const nextParticipants = [...participants, { id, name }];
     setParticipants(nextParticipants);
     setItemClaims((claims) => claims.map((claim) => ({
       ...claim,
@@ -43,16 +44,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     })));
   };
 
-  const updateParticipantPaid = (id: string, paidAmount: number) => {
-    setParticipants((current) => current.map((participant) => (participant.id === id ? { ...participant, paidAmount } : participant)));
-  };
-
   const updateBillItem = (item: BillItem) => {
     setItems((current) => current.map((existing) => (existing.id === item.id ? item : existing)));
   };
 
-  const setBillItems = (nextItems: BillItem[]) => {
+  const setBillItems = (nextItems: BillItem[], totals?: { subtotal?: number; total?: number }) => {
     setItems(nextItems);
+    setReceiptSubtotal(totals?.subtotal);
+    setReceiptTotal(totals?.total);
     setItemClaims((claims) => {
       const existingClaims = claims.filter((claim) => nextItems.some((item) => item.id === claim.itemId));
       const newClaims = nextItems
@@ -88,14 +87,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const calculationResult = useMemo(
-    () => calculateBillResults(items, participants, itemClaims),
-    [items, participants, itemClaims]
+    () => calculateBillResults(items, participants, itemClaims, { subtotal: receiptSubtotal, total: receiptTotal }),
+    [items, participants, itemClaims, receiptSubtotal, receiptTotal]
   );
 
   const value = {
-    state: { receiptItems: items, participants, itemClaims },
+    state: { receiptItems: items, receiptSubtotal, receiptTotal, participants, itemClaims },
     addParticipant,
-    updateParticipantPaid,
     updateBillItem,
     setBillItems,
     addBillItem,

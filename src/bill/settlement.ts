@@ -16,7 +16,8 @@ function normalizeParticipantMap<T>(participantIds: string[], defaultValue: T): 
 export function calculateBillResults(
   items: BillItem[],
   participants: Participant[],
-  itemClaims: ItemClaim[]
+  itemClaims: ItemClaim[],
+  receiptTotals?: { subtotal?: number; total?: number }
 ): BillCalculationResult {
   const participantIds = participants.map((participant) => participant.id);
   const shares = normalizeParticipantMap<number>(participantIds, 0);
@@ -45,51 +46,49 @@ export function calculateBillResults(
     }
   }
 
-  const participantSummaries: ParticipantSummary[] = participants.map((participant) => {
-    const share = shares[participant.id] ?? 0;
-    const net = Math.round(participant.paidAmount - share);
-    return {
-      participantId: participant.id,
-      name: participant.name,
-      paid: participant.paidAmount,
-      share,
-      net,
-    };
-  });
+  const itemSubTotal = sum(items.map((item) => item.totalPrice));
+  const receiptSubtotal = receiptTotals?.subtotal ?? itemSubTotal;
+  const receiptTotal = receiptTotals?.total ?? itemSubTotal;
+  const rawTax = receiptTotal - receiptSubtotal;
+  const tax = rawTax > 0 ? Number(rawTax.toFixed(2)) : 0;
 
-  const totalBill = sum(items.map((item) => item.totalPrice));
+  const taxShares: Record<string, number> = {};
+  if (tax > 0 && itemSubTotal > 0) {
+    let allocatedTax = 0;
+    participantIds.forEach((participantId) => {
+      const participantShare = shares[participantId] ?? 0;
+      const ratio = itemSubTotal > 0 ? participantShare / itemSubTotal : 0;
+      const shareTax = Number((ratio * tax).toFixed(2));
+      taxShares[participantId] = shareTax;
+      allocatedTax += shareTax;
+    });
 
-  const creditors = participantSummaries
-    .filter((summary) => summary.net > 0)
-    .sort((a, b) => a.name.localeCompare(b.name));
-  const debtors = participantSummaries
-    .filter((summary) => summary.net < 0)
-    .sort((a, b) => a.name.localeCompare(b.name));
-
-  const settlements: SettlementLine[] = [];
-  let creditorIndex = 0;
-  let debtorIndex = 0;
-
-  while (creditorIndex < creditors.length && debtorIndex < debtors.length) {
-    const creditor = creditors[creditorIndex];
-    const debtor = debtors[debtorIndex];
-    const amount = Math.min(creditor.net, -debtor.net);
-    settlements.push({ from: debtor.name, to: creditor.name, amount });
-
-    creditors[creditorIndex] = { ...creditor, net: creditor.net - amount };
-    debtors[debtorIndex] = { ...debtor, net: debtor.net + amount };
-
-    if (creditors[creditorIndex].net === 0) {
-      creditorIndex += 1;
-    }
-    if (debtors[debtorIndex].net === 0) {
-      debtorIndex += 1;
+    const remainder = Math.round((tax - allocatedTax) * 100) / 100;
+    if (remainder !== 0) {
+      const lastId = participantIds[participantIds.length - 1];
+      taxShares[lastId] = Number(((taxShares[lastId] ?? 0) + remainder).toFixed(2));
     }
   }
 
+  const participantSummaries: ParticipantSummary[] = participants.map((participant) => {
+    const baseShare = shares[participant.id] ?? 0;
+    const taxShare = taxShares[participant.id] ?? 0;
+    const share = Number((baseShare + taxShare).toFixed(2));
+    return {
+      participantId: participant.id,
+      name: participant.name,
+      share,
+    };
+  });
+
+  const totalBill = receiptTotal > 0 ? receiptTotal : itemSubTotal;
+
   return {
     totalBill,
+    subtotal: receiptSubtotal,
+    total: receiptTotal,
+    tax,
     participantSummaries,
-    settlements,
+    settlements: [],
   };
 }
