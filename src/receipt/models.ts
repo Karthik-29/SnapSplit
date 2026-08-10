@@ -24,5 +24,6 @@ export type OCRResult = {
 export type Receipt = {
   items: BillItem[];
   rawText?: string;
+  subtotal?: number;
   total?: number;
 };

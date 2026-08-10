@@ -1,0 +1,959 @@
+{
+  "text": "T oo ) alamy\n.\nElChalanrestaurant@gzail.com .\nTABLE: 13 - 1 Guest \"\nYour Server was Rossy 4\n3/12/2016 1:13:51 PM /\nv Sequence #: 0000068 /\nL 1D #: 0389450 al\nN ITEM QTY PRICE\n4 CAUSA DE POLLO i -””7”1\"7$8.95\nCEVICHE DE CAMARONES 1 $16.95 a\nLIMONADA 1 $4.00\nPESCADO AL AJILLO 1 $15.95\nSubtotal $45.85\nTotal Taxes $3.617\nGrand Total $49.52\nnount De: W\n15% 20% 25% \\\n$7.43 $9.90 $12.38 R\nT1P 1S NOT IKCLUDED  PROPINA NO INCLUIDA\nTHANK YOU - GRACIAS!!! 4\nGuest Check i\n((}‘ - e ==mz=zzoESSESSSSESSESSSSSES\nc ? % V\nP N\nI a el N\nalamy e\n",
+  "tokens": [
+    {
+      "text": "T",
+      "boundingBox": [
+        153,
+        146,
+        222,
+        165
+      ]
+    },
+    {
+      "text": "oo",
+      "boundingBox": [
+        283,
+        146,
+        285,
+        148
+      ]
+    },
+    {
+      "text": ")",
+      "boundingBox": [
+        446,
+        146,
+        448,
+        148
+      ]
+    },
+    {
+      "text": "alamy",
+      "boundingBox": [
+        674,
+        101,
+        782,
+        155
+      ]
+    },
+    {
+      "text": ".",
+      "boundingBox": [
+        741,
+        360,
+        744,
+        363
+      ]
+    },
+    {
+      "text": "ElChalanrestaurant@gzail.com",
+      "boundingBox": [
+        179,
+        376,
+        521,
+        398
+      ]
+    },
+    {
+      "text": ".",
+      "boundingBox": [
+        719,
+        383,
+        721,
+        386
+      ]
+    },
+    {
+      "text": "TABLE:",
+      "boundingBox": [
+        230,
+        405,
+        300,
+        424
+      ]
+    },
+    {
+      "text": "13",
+      "boundingBox": [
+        320,
+        405,
+        340,
+        424
+      ]
+    },
+    {
+      "text": "-",
+      "boundingBox": [
+        358,
+        414,
+        363,
+        416
+      ]
+    },
+    {
+      "text": "1",
+      "boundingBox": [
+        383,
+        406,
+        387,
+        409
+      ]
+    },
+    {
+      "text": "Guest",
+      "boundingBox": [
+        406,
+        405,
+        462,
+        423
+      ]
+    },
+    {
+      "text": "\"",
+      "boundingBox": [
+        722,
+        375,
+        738,
+        399
+      ]
+    },
+    {
+      "text": "Your",
+      "boundingBox": [
+        218,
+        434,
+        265,
+        452
+      ]
+    },
+    {
+      "text": "Server",
+      "boundingBox": [
+        282,
+        433,
+        353,
+        452
+      ]
+    },
+    {
+      "text": "was",
+      "boundingBox": [
+        371,
+        437,
+        404,
+        451
+      ]
+    },
+    {
+      "text": "Rossy",
+      "boundingBox": [
+        420,
+        433,
+        476,
+        453
+      ]
+    },
+    {
+      "text": "4",
+      "boundingBox": [
+        688,
+        431,
+        693,
+        438
+      ]
+    },
+    {
+      "text": "3/12/2016",
+      "boundingBox": [
+        232,
+        461,
+        344,
+        482
+      ]
+    },
+    {
+      "text": "1:13:51",
+      "boundingBox": [
+        362,
+        460,
+        440,
+        479
+      ]
+    },
+    {
+      "text": "PM",
+      "boundingBox": [
+        459,
+        460,
+        481,
+        472
+      ]
+    },
+    {
+      "text": "/",
+      "boundingBox": [
+        667,
+        452,
+        682,
+        489
+      ]
+    },
+    {
+      "text": "v",
+      "boundingBox": [
+        9,
+        506,
+        13,
+        510
+      ]
+    },
+    {
+      "text": "Sequence",
+      "boundingBox": [
+        233,
+        490,
+        334,
+        510
+      ]
+    },
+    {
+      "text": "#:",
+      "boundingBox": [
+        349,
+        492,
+        369,
+        507
+      ]
+    },
+    {
+      "text": "0000068",
+      "boundingBox": [
+        387,
+        488,
+        472,
+        507
+      ]
+    },
+    {
+      "text": "/",
+      "boundingBox": [
+        666,
+        490,
+        668,
+        496
+      ]
+    },
+    {
+      "text": "L",
+      "boundingBox": [
+        4,
+        520,
+        35,
+        543
+      ]
+    },
+    {
+      "text": "1D",
+      "boundingBox": [
+        276,
+        517,
+        298,
+        536
+      ]
+    },
+    {
+      "text": "#:",
+      "boundingBox": [
+        313,
+        519,
+        333,
+        536
+      ]
+    },
+    {
+      "text": "0389450",
+      "boundingBox": [
+        351,
+        516,
+        437,
+        536
+      ]
+    },
+    {
+      "text": "al",
+      "boundingBox": [
+        826,
+        491,
+        857,
+        534
+      ]
+    },
+    {
+      "text": "N",
+      "boundingBox": [
+        20,
+        561,
+        40,
+        571
+      ]
+    },
+    {
+      "text": "ITEM",
+      "boundingBox": [
+        92,
+        546,
+        142,
+        565
+      ]
+    },
+    {
+      "text": "QTY",
+      "boundingBox": [
+        506,
+        544,
+        538,
+        563
+      ]
+    },
+    {
+      "text": "PRICE",
+      "boundingBox": [
+        568,
+        542,
+        628,
+        561
+      ]
+    },
+    {
+      "text": "4",
+      "boundingBox": [
+        16,
+        610,
+        23,
+        616
+      ]
+    },
+    {
+      "text": "CAUSA",
+      "boundingBox": [
+        92,
+        604,
+        157,
+        624
+      ]
+    },
+    {
+      "text": "DE",
+      "boundingBox": [
+        173,
+        603,
+        197,
+        623
+      ]
+    },
+    {
+      "text": "POLLO",
+      "boundingBox": [
+        213,
+        603,
+        277,
+        623
+      ]
+    },
+    {
+      "text": "i",
+      "boundingBox": [
+        357,
+        584,
+        403,
+        586
+      ]
+    },
+    {
+      "text": "-””7”1\"7$8.95",
+      "boundingBox": [
+        436,
+        582,
+        636,
+        621
+      ]
+    },
+    {
+      "text": "CEVICHE",
+      "boundingBox": [
+        92,
+        633,
+        185,
+        654
+      ]
+    },
+    {
+      "text": "DE",
+      "boundingBox": [
+        201,
+        633,
+        226,
+        653
+      ]
+    },
+    {
+      "text": "CAMARONES",
+      "boundingBox": [
+        241,
+        632,
+        358,
+        653
+      ]
+    },
+    {
+      "text": "1",
+      "boundingBox": [
+        530,
+        631,
+        536,
+        649
+      ]
+    },
+    {
+      "text": "$16.95",
+      "boundingBox": [
+        566,
+        628,
+        640,
+        650
+      ]
+    },
+    {
+      "text": "a",
+      "boundingBox": [
+        725,
+        635,
+        738,
+        659
+      ]
+    },
+    {
+      "text": "LIMONADA",
+      "boundingBox": [
+        94,
+        663,
+        200,
+        684
+      ]
+    },
+    {
+      "text": "1",
+      "boundingBox": [
+        533,
+        660,
+        539,
+        679
+      ]
+    },
+    {
+      "text": "$4.00",
+      "boundingBox": [
+        582,
+        657,
+        644,
+        680
+      ]
+    },
+    {
+      "text": "PESCADO",
+      "boundingBox": [
+        94,
+        692,
+        188,
+        714
+      ]
+    },
+    {
+      "text": "AL",
+      "boundingBox": [
+        204,
+        692,
+        229,
+        712
+      ]
+    },
+    {
+      "text": "AJILLO",
+      "boundingBox": [
+        245,
+        691,
+        323,
+        712
+      ]
+    },
+    {
+      "text": "1",
+      "boundingBox": [
+        536,
+        689,
+        543,
+        708
+      ]
+    },
+    {
+      "text": "$15.95",
+      "boundingBox": [
+        573,
+        687,
+        648,
+        709
+      ]
+    },
+    {
+      "text": "Subtotal",
+      "boundingBox": [
+        302,
+        749,
+        406,
+        773
+      ]
+    },
+    {
+      "text": "$45.85",
+      "boundingBox": [
+        581,
+        746,
+        656,
+        770
+      ]
+    },
+    {
+      "text": "Total",
+      "boundingBox": [
+        304,
+        781,
+        368,
+        804
+      ]
+    },
+    {
+      "text": "Taxes",
+      "boundingBox": [
+        386,
+        781,
+        452,
+        803
+      ]
+    },
+    {
+      "text": "$3.617",
+      "boundingBox": [
+        598,
+        777,
+        659,
+        801
+      ]
+    },
+    {
+      "text": "Grand",
+      "boundingBox": [
+        309,
+        844,
+        376,
+        869
+      ]
+    },
+    {
+      "text": "Total",
+      "boundingBox": [
+        391,
+        843,
+        455,
+        867
+      ]
+    },
+    {
+      "text": "$49.52",
+      "boundingBox": [
+        593,
+        839,
+        670,
+        864
+      ]
+    },
+    {
+      "text": "nount",
+      "boundingBox": [
+        313,
+        879,
+        394,
+        925
+      ]
+    },
+    {
+      "text": "De:",
+      "boundingBox": [
+        408,
+        878,
+        460,
+        922
+      ]
+    },
+    {
+      "text": "W",
+      "boundingBox": [
+        597,
+        873,
+        637,
+        921
+      ]
+    },
+    {
+      "text": "15%",
+      "boundingBox": [
+        174,
+        936,
+        212,
+        959
+      ]
+    },
+    {
+      "text": "20%",
+      "boundingBox": [
+        371,
+        931,
+        411,
+        954
+      ]
+    },
+    {
+      "text": "25%",
+      "boundingBox": [
+        563,
+        925,
+        602,
+        948
+      ]
+    },
+    {
+      "text": "\\",
+      "boundingBox": [
+        743,
+        926,
+        781,
+        981
+      ]
+    },
+    {
+      "text": "$7.43",
+      "boundingBox": [
+        159,
+        971,
+        228,
+        997
+      ]
+    },
+    {
+      "text": "$9.90",
+      "boundingBox": [
+        359,
+        964,
+        427,
+        992
+      ]
+    },
+    {
+      "text": "$12.38",
+      "boundingBox": [
+        553,
+        958,
+        631,
+        985
+      ]
+    },
+    {
+      "text": "R",
+      "boundingBox": [
+        781,
+        981,
+        790,
+        995
+      ]
+    },
+    {
+      "text": "T1P",
+      "boundingBox": [
+        103,
+        1045,
+        143,
+        1070
+      ]
+    },
+    {
+      "text": "1S",
+      "boundingBox": [
+        162,
+        1044,
+        187,
+        1069
+      ]
+    },
+    {
+      "text": "NOT",
+      "boundingBox": [
+        206,
+        1042,
+        243,
+        1066
+      ]
+    },
+    {
+      "text": "IKCLUDED",
+      "boundingBox": [
+        265,
+        1037,
+        375,
+        1065
+      ]
+    },
+    {
+      "text": " PROPINA",
+      "boundingBox": [
+        434,
+        1032,
+        529,
+        1058
+      ]
+    },
+    {
+      "text": "NO",
+      "boundingBox": [
+        545,
+        1030,
+        570,
+        1054
+      ]
+    },
+    {
+      "text": "INCLUIDA",
+      "boundingBox": [
+        588,
+        1025,
+        691,
+        1052
+      ]
+    },
+    {
+      "text": "THANK",
+      "boundingBox": [
+        251,
+        1076,
+        320,
+        1101
+      ]
+    },
+    {
+      "text": "YOU",
+      "boundingBox": [
+        337,
+        1074,
+        377,
+        1098
+      ]
+    },
+    {
+      "text": "-",
+      "boundingBox": [
+        396,
+        1084,
+        404,
+        1087
+      ]
+    },
+    {
+      "text": "GRACIAS!!!",
+      "boundingBox": [
+        422,
+        1066,
+        556,
+        1095
+      ]
+    },
+    {
+      "text": "4",
+      "boundingBox": [
+        835,
+        1071,
+        843,
+        1100
+      ]
+    },
+    {
+      "text": "Guest",
+      "boundingBox": [
+        324,
+        1109,
+        391,
+        1136
+      ]
+    },
+    {
+      "text": "Check",
+      "boundingBox": [
+        410,
+        1105,
+        477,
+        1132
+      ]
+    },
+    {
+      "text": "i",
+      "boundingBox": [
+        686,
+        1137,
+        696,
+        1140
+      ]
+    },
+    {
+      "text": "((}‘",
+      "boundingBox": [
+        16,
+        1142,
+        69,
+        1184
+      ]
+    },
+    {
+      "text": "-",
+      "boundingBox": [
+        228,
+        1169,
+        232,
+        1171
+      ]
+    },
+    {
+      "text": "e",
+      "boundingBox": [
+        313,
+        1157,
+        317,
+        1167
+      ]
+    },
+    {
+      "text": "==mz=zzoESSESSSSESSESSSSSES",
+      "boundingBox": [
+        347,
+        1138,
+        696,
+        1165
+      ]
+    },
+    {
+      "text": "c",
+      "boundingBox": [
+        46,
+        1197,
+        76,
+        1228
+      ]
+    },
+    {
+      "text": "?",
+      "boundingBox": [
+        541,
+        1195,
+        545,
+        1199
+      ]
+    },
+    {
+      "text": "%",
+      "boundingBox": [
+        693,
+        1193,
+        713,
+        1220
+      ]
+    },
+    {
+      "text": "V",
+      "boundingBox": [
+        747,
+        1183,
+        820,
+        1219
+      ]
+    },
+    {
+      "text": "P",
+      "boundingBox": [
+        12,
+        1234,
+        22,
+        1241
+      ]
+    },
+    {
+      "text": "N",
+      "boundingBox": [
+        713,
+        1213,
+        752,
+        1245
+      ]
+    },
+    {
+      "text": "I",
+      "boundingBox": [
+        23,
+        1279,
+        43,
+        1300
+      ]
+    },
+    {
+      "text": "a",
+      "boundingBox": [
+        275,
+        1285,
+        288,
+        1300
+      ]
+    },
+    {
+      "text": "el",
+      "boundingBox": [
+        456,
+        1270,
+        509,
+        1310
+      ]
+    },
+    {
+      "text": "N",
+      "boundingBox": [
+        614,
+        1270,
+        707,
+        1299
+      ]
+    },
+    {
+      "text": "alamy",
+      "boundingBox": [
+        50,
+        1316,
+        151,
+        1375
+      ]
+    },
+    {
+      "text": "e",
+      "boundingBox": [
+        681,
+        1327,
+        816,
+        1365
+      ]
+    }
+  ]
+}

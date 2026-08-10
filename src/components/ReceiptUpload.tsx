@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { realReceiptOCR } from '../receipt/ocr';
-import { parseReceiptLines } from '../receipt/parser';
+import { parseReceiptData } from '../receipt/parser';
 import { BillItem } from '../receipt/models';
 
 function ReceiptUpload() {
@@ -34,9 +34,9 @@ function ReceiptUpload() {
 
     try {
       const ocrResult = await realReceiptOCR.extract(file);
-      const parsedItems = parseReceiptLines(ocrResult);
-      setParsedItemCount(parsedItems.length);
-      applyParsedItems(parsedItems);
+      const parsedReceipt = parseReceiptData(ocrResult);
+      setParsedItemCount(parsedReceipt.items.length);
+      applyParsedItems(parsedReceipt.items);
     } catch (err) {
       setParsedItemCount(0);
       setError('Failed to parse receipt.');
