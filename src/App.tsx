@@ -5,10 +5,11 @@ import ItemClaimPage from './routes/ItemClaimPage';
 import ParticipantsPage from './routes/ParticipantsPage';
 import SettlementPage from './routes/SettlementPage';
 import SheetExportPage from './routes/SheetExportPage';
+import { JoinSessionPage } from './routes/JoinSessionPage';
 import { useAuthContext } from './context/AuthContext';
 
 function App() {
-  const { user, signIn, signOut } = useAuthContext();
+  const { user, signIn, signOut, isConfigured, signInError, isSigningIn } = useAuthContext();
 
   return (
     <div className="app-shell">
@@ -33,9 +34,17 @@ function App() {
               </button>
             </>
           ) : (
-            <button type="button" onClick={signIn}>
-              Sign in with Google
-            </button>
+            <>
+              <button type="button" onClick={signIn} disabled={!isConfigured || isSigningIn}>
+                {isSigningIn ? 'Signing in…' : 'Sign in with Google'}
+              </button>
+              {!isConfigured && (
+                <div className="field-error">
+                  Google auth not configured. Add VITE_GOOGLE_CLIENT_ID to .env.
+                </div>
+              )}
+              {signInError && <div className="field-error">{signInError}</div>}
+            </>
           )}
         </div>
       </header>
@@ -47,6 +56,7 @@ function App() {
           <Route path="/participants" element={<ParticipantsPage />} />
           <Route path="/settlement" element={<SettlementPage />} />
           <Route path="/export" element={<SheetExportPage />} />
+          <Route path="/s/:sessionSecret" element={<JoinSessionPage />} />
         </Routes>
       </main>
     </div>

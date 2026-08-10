@@ -6,7 +6,10 @@ import { BillState, ItemClaim, Participant } from '../bill/models';
 
 export type AppContextValue = {
   state: BillState;
-  addParticipant: (name: string) => void;
+  addParticipant: (name: string, id?: string) => void;
+  removeParticipant: (participantId: string) => void;
+  setParticipants: (participants: Participant[]) => void;
+  restoreState: (state: Pick<BillState, 'receiptItems' | 'receiptSubtotal' | 'receiptTotal' | 'participants' | 'itemClaims'>) => void;
   updateBillItem: (item: BillItem) => void;
   setBillItems: (items: BillItem[], receiptTotals?: { subtotal?: number; total?: number }) => void;
   addBillItem: () => void;
@@ -17,11 +20,7 @@ export type AppContextValue = {
 
 const initialItems: BillItem[] = [];
 
-const defaultParticipants: Participant[] = [
-  { id: 'user-1', name: 'Karthik' },
-  { id: 'user-2', name: 'Rahul' },
-  { id: 'user-3', name: 'Amit' },
-];
+const defaultParticipants: Participant[] = [];
 
 const initialClaims: ItemClaim[] = [];
 
@@ -29,19 +28,56 @@ const AppContext = createContext<AppContextValue | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [items, setItems] = useState<BillItem[]>(initialItems);
-  const [participants, setParticipants] = useState<Participant[]>(defaultParticipants);
+  const [participants, setParticipantsState] = useState<Participant[]>(defaultParticipants);
   const [itemClaims, setItemClaims] = useState<ItemClaim[]>(initialClaims);
   const [receiptSubtotal, setReceiptSubtotal] = useState<number | undefined>(undefined);
   const [receiptTotal, setReceiptTotal] = useState<number | undefined>(undefined);
 
-  const addParticipant = (name: string) => {
-    const id = `user-${Date.now()}`;
-    const nextParticipants = [...participants, { id, name }];
-    setParticipants(nextParticipants);
+  const addParticipant = (name: string, idOverride?: string) => {
+    const id = idOverride ?? `user-${Date.now()}`;
+    const nextParticipants = participants.some((participant) => participant.id === id)
+      ? participants
+      : [...participants, { id, name }];
+
+    setParticipantsState(nextParticipants);
     setItemClaims((claims) => claims.map((claim) => ({
       ...claim,
       individualQuantities: { ...claim.individualQuantities, [id]: 0 },
     })));
+  };
+
+  const setParticipants = (nextParticipants: Participant[]) => {
+    setParticipantsState(nextParticipants);
+    setItemClaims((claims) =>
+      claims.map((claim) => ({
+        ...claim,
+        individualQuantities: Object.fromEntries(
+          Object.entries(claim.individualQuantities).filter(([key]) => nextParticipants.some((participant) => participant.id === key))
+        ),
+        sharedWith: claim.sharedWith.filter((id) => nextParticipants.some((participant) => participant.id === id)),
+      }))
+    );
+  };
+
+  const restoreState = (nextState: Pick<BillState, 'receiptItems' | 'receiptSubtotal' | 'receiptTotal' | 'participants' | 'itemClaims'>) => {
+    setItems(nextState.receiptItems);
+    setReceiptSubtotal(nextState.receiptSubtotal);
+    setReceiptTotal(nextState.receiptTotal);
+    setParticipantsState(nextState.participants);
+    setItemClaims(nextState.itemClaims);
+  };
+
+  const removeParticipant = (participantId: string) => {
+    setParticipantsState((current) => current.filter((participant) => participant.id !== participantId));
+    setItemClaims((claims) =>
+      claims.map((claim) => ({
+        ...claim,
+        individualQuantities: Object.fromEntries(
+          Object.entries(claim.individualQuantities).filter(([key]) => key !== participantId)
+        ),
+        sharedWith: claim.sharedWith.filter((id) => id !== participantId),
+      }))
+    );
   };
 
   const updateBillItem = (item: BillItem) => {
@@ -94,6 +130,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const value = {
     state: { receiptItems: items, receiptSubtotal, receiptTotal, participants, itemClaims },
     addParticipant,
+    removeParticipant,
+    setParticipants,
+    restoreState,
     updateBillItem,
     setBillItems,
     addBillItem,

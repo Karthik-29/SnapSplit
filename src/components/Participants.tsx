@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 
 function Participants() {
-  const { state, addParticipant } = useAppContext();
+  const { state, addParticipant, removeParticipant } = useAppContext();
   const [newName, setNewName] = useState('');
 
   const handleAddParticipant = () => {
@@ -12,6 +12,10 @@ function Participants() {
     }
     addParticipant(newName.trim());
     setNewName('');
+  };
+
+  const handleRemoveParticipant = (participantId: string) => {
+    removeParticipant(participantId);
   };
 
   return (
@@ -24,12 +28,22 @@ function Participants() {
           <thead>
             <tr>
               <th>Person</th>
+              <th>Action</th>
             </tr>
           </thead>
           <tbody>
             {state.participants.map((participant) => (
               <tr key={participant.id}>
                 <td>{participant.name}</td>
+                <td>
+                  <button
+                    type="button"
+                    className="button button-secondary"
+                    onClick={() => handleRemoveParticipant(participant.id)}
+                  >
+                    Remove
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
