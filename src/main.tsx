@@ -4,18 +4,18 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import { AppProvider } from './context/AppContext';
 import { AuthProvider } from './context/AuthContext';
-import { SessionProvider } from './context/SessionContext';
+import { PartyProvider } from './context/PartyContext';
 import './styles.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <BrowserRouter>
       <AuthProvider>
-        <SessionProvider>
+        <PartyProvider>
           <AppProvider>
             <App />
           </AppProvider>
-        </SessionProvider>
+        </PartyProvider>
       </AuthProvider>
     </BrowserRouter>
   </React.StrictMode>

@@ -123,3 +123,17 @@ section + .section-actions {
   padding: 20px;
   margin-top: 16px;
 }
+
+.party-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.party-choice-grid > div {
+  padding: 8px;
+}
+
+.party-choice-grid h3 {
+  margin-top: 0;
+}

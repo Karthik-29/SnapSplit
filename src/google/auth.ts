@@ -13,7 +13,9 @@ export type GoogleAuthState = {
 
 export const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 export const isGoogleAuthConfigured = Boolean(GOOGLE_CLIENT_ID);
-const GOOGLE_SCOPES = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.metadata https://www.googleapis.com/auth/spreadsheets';
+// The client ID is public browser configuration. It is injected by Vite from
+// VITE_GOOGLE_CLIENT_ID; no client secret is used by this application.
+const GOOGLE_SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
 
 let gsiLoaded = false;
 let idInitialized = false;
