@@ -1,6 +1,6 @@
 # SnapSplit Application Documentation
 
-SnapSplit is a backendless React + TypeScript web app for splitting a restaurant receipt. The app runs entirely in the browser, uses Google Sign-In for identity, and uses a user-owned Google Sheet as the shared party state.
+SnapSplit is a backendless React + TypeScript web app for splitting a restaurant receipt. The app runs entirely in the browser and uses a user-owned Google Sheet as the shared party state.
 
 The current implementation is intentionally small: one bill, one shared Google Sheet, browser-local state while the app is open, and row-level persistence to Google Sheets.
 
@@ -21,9 +21,9 @@ flowchart LR
   Load --> AppState
 ```
 
-There is no SnapSplit backend. Google provides both identity and persistence:
+There is no SnapSplit backend. Google provides persistence and per-file authorization:
 
-- Google OAuth identifies the user and grants Sheets API access.
+- Google OAuth grants SnapSplit access only to Google Sheets selected through Google Picker.
 - Google Sheets stores the party data.
 - React context stores the live in-browser bill state.
 - `PartySync` watches local state and writes changes back to the remote Sheet.
@@ -32,24 +32,20 @@ There is no SnapSplit backend. Google provides both identity and persistence:
 
 ```mermaid
 flowchart TD
-  Start[Open SnapSplit] --> SignedIn{Signed in with Google?}
-  SignedIn -- No --> GoogleSignIn[Sign in with Google]
-  GoogleSignIn --> PartyChoice
-  SignedIn -- Yes --> PartyChoice[Choose Create Party or Join Party]
+  Start[Open SnapSplit] --> PartyChoice[Choose Create Party or Join Party]
 
   PartyChoice --> Create[Create Party]
   PartyChoice --> Join[Join Party]
 
-  Create --> PasteEmptySheet[Paste empty Google Sheet URL]
-  PasteEmptySheet --> InitSheet[initializeParty creates SnapSplit tabs]
+  Create --> PickEmptySheet[Choose empty Sheet in Google Picker]
+  PickEmptySheet --> InitSheet[initializeParty creates SnapSplit tabs]
   InitSheet --> LoadCreated[loadParty reads Sheet]
 
-  Join --> PasteSharedSheet[Paste shared Google Sheet URL]
-  PasteSharedSheet --> LoadJoined[loadParty reads Sheet]
+  Join --> PickSharedSheet[Choose shared Sheet in Google Picker]
+  PickSharedSheet --> LoadJoined[loadParty reads Sheet]
 
-  LoadCreated --> AddUser[Add signed-in user to USERS if missing]
-  LoadJoined --> AddUser
-  AddUser --> RestoreState[restoreState into AppContext]
+  LoadCreated --> RestoreState[restoreState into AppContext]
+  LoadJoined --> RestoreState
   RestoreState --> Upload[Upload receipt]
   Upload --> OCR[Run OCR]
   OCR --> Parse[Parse receipt items and totals]
@@ -66,7 +62,7 @@ flowchart TD
   AutoSync --> RemoteSheet[(Remote Google Sheet)]
 ```
 
-The party screen appears before receipt upload. This matters because shared persistence is established first; bill edits made after that point can be saved to the party Sheet.
+The party screen appears before receipt upload. Each user must select the shared Sheet in Google Picker. This establishes per-file access under the `drive.file` scope; bill edits made after that point can be saved to the party Sheet.
 
 ## 3. State Model
 
@@ -118,32 +114,36 @@ https://docs.google.com/spreadsheets/d/<spreadsheet-id>/...
 
 Authentication code lives in `src/google/auth.ts`.
 
-The OAuth client ID is read from Vite environment config:
+The browser OAuth client ID is hardcoded in `src/google/auth.ts`:
 
 ```ts
-export const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+export const GOOGLE_CLIENT_ID = '<public OAuth client ID>';
 ```
 
 Only a public OAuth client ID is used. There is no client secret in the browser app.
 
-The app requests this Sheets scope:
+The app requests this least-privilege Drive scope:
 
 ```text
-https://www.googleapis.com/auth/spreadsheets
+https://www.googleapis.com/auth/drive.file
 ```
 
-Google Sheet sharing is not managed by SnapSplit. Users must configure sharing in Google Sheets. If a participant cannot access a Sheet, the Sheets API returns an access error and the app shows a friendly message.
+`drive.file` grants access only to files the user selects through Google Picker or creates with SnapSplit. SnapSplit does not receive access to the user's other Sheets or Drive files.
+
+Google Picker also requires the Google Picker API and Google Sheets API to be enabled, a browser API key restricted to SnapSplit's origins, and the Cloud project number as the Picker app ID.
+
+Google Sheet sharing is not managed by SnapSplit. The party owner should share the Sheet with friends as Editors, or use link sharing if appropriate. Each friend must open SnapSplit, choose **Choose Google Sheet**, and select that same Sheet. A link-only Sheet may not appear in Picker until it is shared directly or added to the user's Drive.
 
 ## 6. Module Map
 
 ```text
 src/
-  App.tsx                    Route shell, navigation, auth controls, party gate
+  App.tsx                    Route shell, navigation, and party gate
   main.tsx                   React bootstrap and provider composition
 
   context/
     AppContext.tsx           Live bill state and state mutation functions
-    AuthContext.tsx          Google sign-in and token access
+    AuthContext.tsx          Google OAuth token access
     PartyContext.tsx         Current connected Sheet-backed party
 
   google/
@@ -197,7 +197,7 @@ flowchart TD
 
 Provider responsibilities:
 
-- `AuthProvider` owns Google user state and access tokens.
+- `AuthProvider` owns the Google OAuth access token.
 - `PartyProvider` owns the currently connected party, if any.
 - `AppProvider` owns live bill state and exposes mutation functions.
 
@@ -212,25 +212,17 @@ Provider responsibilities:
 
 ### `src/google/auth.ts`
 
-`requestGoogleSignIn()`
-
-Loads Google Identity Services, prompts the user to sign in, parses the returned ID token, and resolves a `GoogleUser`.
-
 `requestGoogleAccessToken()`
 
-Creates a Google OAuth token client and requests an access token for the Sheets API scope.
+Creates a Google OAuth token client and requests an access token for the `drive.file` scope.
+
+`pickGoogleSpreadsheet(token)`
+
+Opens Google Picker filtered to spreadsheets and returns the ID of the file explicitly selected by the user.
 
 `revokeGoogleAccessToken(token)`
 
 Revokes the current OAuth token during sign-out.
-
-`parseJwt(jwt)`
-
-Decodes the Google ID token payload so the app can read user identity fields like `sub`, `name`, `email`, and `picture`.
-
-`ensureIdClient()`
-
-Initializes the Google Sign-In client. It validates that `VITE_GOOGLE_CLIENT_ID` is configured.
 
 `ensureOAuthClient()`
 
@@ -240,7 +232,7 @@ Initializes the OAuth token client used for Sheets API access.
 
 `extractSpreadsheetId(url)`
 
-Parses a Google Sheets URL and extracts the spreadsheet ID. Returns `null` for unsupported or malformed URLs.
+Legacy URL parser retained for compatibility; the active party flow receives spreadsheet IDs from Google Picker instead.
 
 `initializeParty(token, spreadsheetId)`
 
@@ -343,10 +335,6 @@ Memoized result from `calculateBillResults`, recomputed whenever items, particip
 
 ### `src/context/AuthContext.tsx`
 
-`signIn()`
-
-Starts Google sign-in and stores the signed-in user in context.
-
 `getAccessToken()`
 
 Returns a cached token if available, otherwise requests a new Google OAuth token.
@@ -379,12 +367,10 @@ The component does not block UI editing if sync fails. It logs the error, leavin
 
 Controls the Create Party and Join Party flow:
 
-- Requires Google sign-in.
-- Accepts a Google Sheets URL.
-- Extracts the spreadsheet ID.
+- Opens Google Picker filtered to spreadsheets.
+- Uses the selected spreadsheet ID.
 - Calls `initializeParty` only for create mode.
 - Calls `loadParty` for both create and join modes.
-- Adds the current Google user to the participant list if missing.
 - Calls `restoreState` and `setParty`.
 - Offers refresh from Sheet for an already connected party.
 
@@ -502,15 +488,14 @@ sequenceDiagram
   participant C as AppContext
   participant PC as PartyContext
 
-  U->>P: Paste empty Sheet URL
-  P->>P: extractSpreadsheetId(url)
+  U->>P: Choose empty Sheet in Google Picker
+  P->>P: receive selected spreadsheet ID
   P->>A: getAccessToken()
   A-->>P: access token
   P->>G: initializeParty(token, spreadsheetId)
   G-->>P: Sheet tabs and headers created
   P->>G: loadParty(token, spreadsheetId)
   G-->>P: BillState
-  P->>G: syncParty() if current user missing from USERS
   P->>C: restoreState(party.state)
   P->>PC: setParty(party)
   P->>U: Navigate to upload
@@ -527,13 +512,12 @@ sequenceDiagram
   participant C as AppContext
   participant PC as PartyContext
 
-  U->>P: Paste shared Sheet URL
-  P->>P: extractSpreadsheetId(url)
+  U->>P: Choose shared Sheet in Google Picker
+  P->>P: receive selected spreadsheet ID
   P->>A: getAccessToken()
   A-->>P: access token
   P->>G: loadParty(token, spreadsheetId)
   G-->>P: Existing BillState
-  P->>G: syncParty() if current user missing from USERS
   P->>C: restoreState(party.state)
   P->>PC: setParty(party)
 ```
@@ -635,10 +619,12 @@ cd /mnt/c/Projects/SnapSplit
 npm run dev
 ```
 
-Required environment variable:
+Required Google Cloud configuration:
 
 ```text
-VITE_GOOGLE_CLIENT_ID=<your Google OAuth client ID>
+GOOGLE_CLIENT_ID: hardcoded public browser OAuth client ID in src/google/auth.ts
+GOOGLE_PICKER_API_KEY: restricted browser API key in src/google/auth.ts
+GOOGLE_PROJECT_NUMBER: Cloud project number used as Picker app ID
 ```
 
 ## 14. Testing Overview
@@ -652,7 +638,7 @@ The project uses Vitest. Existing tests cover core parsing and bill logic:
 
 Recommended future test additions:
 
-- `extractSpreadsheetId` URL parsing tests.
+- Google Picker flow tests with mocked Picker and OAuth APIs.
 - `loadParty` Sheet row conversion tests.
 - `syncParty` row generation tests.
 - Party create/join UI tests with mocked Google APIs.

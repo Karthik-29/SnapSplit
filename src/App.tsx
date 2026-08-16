@@ -5,13 +5,11 @@ import ItemClaimPage from './routes/ItemClaimPage';
 import ParticipantsPage from './routes/ParticipantsPage';
 import SettlementPage from './routes/SettlementPage';
 import SheetExportPage from './routes/SheetExportPage';
-import { useAuthContext } from './context/AuthContext';
 import PartyPage from './routes/PartyPage';
 import PartySync from './components/PartySync';
 import { usePartyContext } from './context/PartyContext';
 
 function App() {
-  const { user, signIn, signOut, isConfigured, signInError, isSigningIn } = useAuthContext();
   const { party } = usePartyContext();
 
   return (
@@ -29,28 +27,6 @@ function App() {
             <Link to="/export">Export</Link></>}
             <Link to="/party">Party</Link>
           </nav>
-        </div>
-        <div className="auth-controls">
-          {user ? (
-            <>
-              <span>{user.name}</span>
-              <button type="button" onClick={signOut}>
-                Sign out
-              </button>
-            </>
-          ) : (
-            <>
-              <button type="button" onClick={signIn} disabled={!isConfigured || isSigningIn}>
-                {isSigningIn ? 'Signing in…' : 'Sign in with Google'}
-              </button>
-              {!isConfigured && (
-                <div className="field-error">
-                  Google auth not configured. Add VITE_GOOGLE_CLIENT_ID to .env.
-                </div>
-              )}
-              {signInError && <div className="field-error">{signInError}</div>}
-            </>
-          )}
         </div>
       </header>
       <main>
