@@ -100,6 +100,25 @@ section + .section-actions {
   margin-top: 16px;
 }
 
+.receipt-totals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+  margin-top: 16px;
+}
+
+.receipt-totals label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85em;
+}
+
+.receipt-totals .field-error {
+  flex-basis: 100%;
+}
+
 .participant-add {
   display: flex;
   gap: 12px;

@@ -35,19 +35,21 @@ declare namespace google {
       function initTokenClient(config: TokenClientConfig): TokenClient;
       function revoke(token: string, callback: () => void): void;
     }
-    namespace picker {
-      const ViewId: { SPREADSHEETS: string };
-      const Action: { PICKED: string; CANCEL: string };
-      const Response: { DOCUMENTS: string };
-      const Document: { ID: string };
-      class PickerBuilder {
-        addView(view: string): PickerBuilder;
-        setOAuthToken(token: string): PickerBuilder;
-        setDeveloperKey(key: string): PickerBuilder;
-        setAppId(appId: string): PickerBuilder;
-        setCallback(callback: (data: any) => void): PickerBuilder;
-        build(): { setVisible(visible: boolean): void };
-      }
+  }
+  // The Picker lives at google.picker, a sibling of google.accounts — not
+  // beneath it, which is where this declaration used to sit.
+  namespace picker {
+    const ViewId: { SPREADSHEETS: string };
+    const Action: { PICKED: string; CANCEL: string };
+    const Response: { DOCUMENTS: string };
+    const Document: { ID: string };
+    class PickerBuilder {
+      addView(view: string): PickerBuilder;
+      setOAuthToken(token: string): PickerBuilder;
+      setDeveloperKey(key: string): PickerBuilder;
+      setAppId(appId: string): PickerBuilder;
+      setCallback(callback: (data: any) => void): PickerBuilder;
+      build(): { setVisible(visible: boolean): void };
     }
   }
 }
@@ -134,10 +136,16 @@ export async function pickGoogleSpreadsheet(token: string): Promise<PickedGoogle
 }
 
 export async function requestGoogleAccessToken(): Promise<{ accessToken: string; expiresAt: number }> {
-  const client = await ensureOAuthClient();
+  await ensureOAuthClient();
+  const oauth2 = window.google?.accounts?.oauth2;
+  if (!oauth2) {
+    throw new Error('Google Identity Services is unavailable');
+  }
 
   return new Promise((resolve, reject) => {
-    oauthClient = window.google?.accounts?.oauth2.initTokenClient({
+    // A fresh client is needed per request so this call's callback is the one
+    // that resolves; the module-level reference is kept for revocation.
+    const client = oauth2.initTokenClient({
       client_id: GOOGLE_CLIENT_ID,
       scope: GOOGLE_SCOPES,
       callback: (response: google.accounts.oauth2.TokenResponse) => {
@@ -151,7 +159,13 @@ export async function requestGoogleAccessToken(): Promise<{ accessToken: string;
         });
       },
     });
-    oauthClient.requestAccessToken();
+    oauthClient = client;
+    // Without an explicit prompt, Google's token client silently reuses
+    // whatever account already has a session in this browser. This app has no
+    // separate SnapSplit session — Google identity IS the identity, for both
+    // the party owner and every participant signing in independently — so
+    // reusing a stale/wrong account silently is worse than one extra click.
+    client.requestAccessToken({ prompt: 'select_account' });
   });
 }
 

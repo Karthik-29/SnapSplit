@@ -12,6 +12,7 @@ export type AppContextValue = {
   restoreState: (state: Pick<BillState, 'receiptItems' | 'receiptSubtotal' | 'receiptTotal' | 'participants' | 'itemClaims'>) => void;
   updateBillItem: (item: BillItem) => void;
   setBillItems: (items: BillItem[], receiptTotals?: { subtotal?: number; total?: number }) => void;
+  updateReceiptTotals: (totals: { subtotal?: number; total?: number }) => void;
   addBillItem: () => void;
   removeBillItem: (itemId: string) => void;
   updateItemClaim: (claim: ItemClaim) => void;
@@ -97,6 +98,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
+  // OCR can fail to find a total at all, or misread it. Unlike `setBillItems`
+  // (called once, at OCR time), this lets Review correct either value later.
+  const updateReceiptTotals = (totals: { subtotal?: number; total?: number }) => {
+    setReceiptSubtotal(totals.subtotal);
+    setReceiptTotal(totals.total);
+  };
+
   const addBillItem = () => {
     const id = `item-${Date.now()}`;
     const nextItem: BillItem = {
@@ -135,6 +143,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     restoreState,
     updateBillItem,
     setBillItems,
+    updateReceiptTotals,
     addBillItem,
     removeBillItem,
     updateItemClaim,

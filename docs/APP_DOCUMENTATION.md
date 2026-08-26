@@ -10,9 +10,12 @@ The current implementation is intentionally small: one bill, one shared Google S
 flowchart LR
   User[User in browser] --> React[React SPA]
   React --> Auth[Google Identity Services]
-  React --> OCR[Tesseract OCR]
-  React --> Parser[Receipt parser]
-  React --> AppState[AppContext bill state]
+  React --> ImagePipeline[Image preprocessing + region detection]
+  ImagePipeline --> OCR[Tesseract OCR]
+  OCR --> Layout[Layout: lines + numeric columns]
+  Layout --> Parser[Receipt parser: sections, items, totals]
+  Parser --> AppState[AppContext bill state]
+  AppState --> Reconcile[Live items-vs-total reconciliation]
   AppState --> Calc[Bill calculation]
   AppState --> Sync[PartySync]
   Sync --> SheetsAPI[Google Sheets API]
@@ -63,6 +66,8 @@ flowchart TD
 ```
 
 The party screen appears before receipt upload. Each user must select the shared Sheet in Google Picker. This establishes per-file access under the `drive.file` scope; bill edits made after that point can be saved to the party Sheet.
+
+The Review step is where the user corrects OCR mistakes: item names, quantities, and unit prices are editable inline, and the receipt's own subtotal/total are now also directly editable (see §8, `checkItemsAgainstReceiptTotal`) rather than being a fixed, un-correctable value carried over from OCR.
 
 ## 3. State Model
 
@@ -134,6 +139,22 @@ Google Picker also requires the Google Picker API and Google Sheets API to be en
 
 Google Sheet sharing is not managed by SnapSplit. The party owner should share the Sheet with friends as Editors, or use link sharing if appropriate. Each friend must open SnapSplit, choose **Choose Google Sheet**, and select that same Sheet. A link-only Sheet may not appear in Picker until it is shared directly or added to the user's Drive.
 
+### Account selection
+
+`requestGoogleAccessToken()` explicitly passes `prompt: 'select_account'` to `requestAccessToken()`. Without it, Google's token client silently reuses whichever account already has a session in the browser, with no way to switch — a real problem for this app specifically, since there is no separate SnapSplit session and every distinct Google identity interaction (the party owner creating a Sheet, or a participant signing in independently) should let the person confirm which account they mean, rather than an app-level "current user" being assumed for them.
+
+Note that `AuthContext.getAccessToken()` caches the resulting token in React state for the lifetime of the page load. The account picker only has a chance to run again once that cache is empty — a fresh page load, or after `signOut()`. Repeated Google-auth actions within the same loaded page (e.g. testing "switch account" without reloading) will keep reusing the first token obtained.
+
+### Troubleshooting: `Error 400: origin_mismatch`
+
+This means Google's OAuth server rejected the request because the browser's current origin (scheme + host + port) is not in the **Authorized JavaScript origins** list configured for `GOOGLE_CLIENT_ID` in Google Cloud Console (APIs & Services → Credentials). This check happens before any account picker is shown, so it can look like "no picker appears" even in incognito. Fix it in Cloud Console, not in code:
+
+- Add the exact origin shown in the browser's address bar — no trailing slash, no path.
+- Google treats `localhost`, `127.0.0.1`, and a LAN IP as three different origins, even on the same machine. Since [`vite.config.ts`](../vite.config.ts) binds to `0.0.0.0`, confirm which one the browser is actually using.
+- Changes usually take effect within a few minutes.
+
+This is a Google Cloud project setting, not something the app's source code can work around.
+
 ## 6. Module Map
 
 ```text
@@ -142,7 +163,7 @@ src/
   main.tsx                   React bootstrap and provider composition
 
   context/
-    AppContext.tsx           Live bill state and state mutation functions
+    AppContext.tsx           Live bill state and state mutation functions (items, totals, participants, claims)
     AuthContext.tsx          Google OAuth token access
     PartyContext.tsx         Current connected Sheet-backed party
 
@@ -151,15 +172,40 @@ src/
     party.ts                 Sheet schema, load, initialize, and sync operations
 
   receipt/
-    models.ts                Receipt, OCR, and bill item types
-    ocr.ts                   Tesseract OCR implementation and mock OCR
-    parser.ts                Receipt text/token parser
+    models.ts                Receipt, OCR, RgbaImage, and bill item types
+    pipeline.ts              inferReceiptBill: image -> OCR -> ParsedBill, the canonical entry point
+    ocr.ts                   Tesseract OCR implementation (realReceiptOCR)
+    tesseractTokens.ts       Shared Tesseract-word -> OCRToken mapping (browser + Node harness)
+    parser.ts                Thin legacy adapter: ParsedBill -> major-unit BillItem[] for the UI
+
+    image/                   Deterministic, non-ML image preprocessing (spec-mandated: no LLM/VLM/cloud OCR)
+      settings.ts              Single source of truth for preprocessing options (shared by browser + Node tests)
+      decode.ts                Browser image decoder (canvas); Node has its own test-only decoder
+      resize.ts                Pure-JS box-filter resize, used by both browser and Node so pixels match exactly
+      preprocess.ts            Decode -> resize -> grayscale/contrast
+      receiptDetector.ts       Finds the receipt as a bright, low-saturation, roughly solid region (on the COLOR image)
+      crop.ts                  Crops RgbaImage to a detected region; encodes to PNG for the OCR engine
+      normalize.ts             Orchestrates detect -> crop -> preprocess for one receipt image
+      perspective.ts           Perspective correction for a detected quadrilateral -- unused: nothing currently
+                                 produces a quadrilateral to feed it (dead code, kept for a future pass)
+
+    layout/                  Reconstructs spatial structure from OCR tokens
+      lineDetection.ts         Groups tokens into visual lines by vertical position
+      columnDetection.ts       Clusters numeric tokens into columns; identifies the dominant "amount" column
+      normalizeTokens.ts       Token/bounding-box normalization helpers
+
+    parsing/                 Deterministic classification and item/total extraction
+      numberParser.ts          parseMoney (context-sensitive OCR digit correction) and parseQuantity
+      keywordMatcher.ts        Summary keyword table, receipt-metadata detection, item-header detection
+      sectionClassifier.ts     Classifies each line: item / subtotal / tax / total / footer / etc.
+      receiptParser.ts         The real parser: parseReceipt(OCRResult) -> ParsedBill
 
   bill/
     models.ts                Bill, participant, claim, settlement types
     claims.ts                Claim helpers and default claim construction
     splitting.ts             Item splitting helpers
     settlement.ts            Per-participant bill calculation
+    reconciliation.ts        checkItemsAgainstReceiptTotal: live items-vs-receipt-total check for Review
 
   routes/
     PartyPage.tsx            Create/join/refresh party screen
@@ -172,15 +218,22 @@ src/
 
   components/
     PartySync.tsx            Debounced autosync from AppContext to Google Sheet
-    ReceiptUpload.tsx        Upload image, run OCR, parse receipt
-    ReceiptReview.tsx        Edit parsed receipt items
+    ReceiptUpload.tsx        Upload image, run inferReceiptBill, convert via toLegacyReceipt
+    ReceiptReview.tsx        Edit parsed items and receipt subtotal/total; shows live mismatch warning
     Participants.tsx         Add/remove people
     ItemClaim.tsx            Individual/shared item claiming UI
     Settlement.tsx           Show calculated participant shares
     SheetExport.tsx          Show current Google Sheet party connection
 
   tests/
-    *.test.ts                Unit tests for parsing, claims, splitting, settlement
+    *.test.ts                Unit tests for parsing, claims, splitting, settlement, reconciliation
+    receipt/
+      parsing/               Number parsing, section classification, item/quantity/total edge cases
+      layout/                Line reconstruction and column detection
+      image/                 Region detection (synthetic RgbaImage fixtures)
+      support/               Node-only OCR/image test harness (never bundled into the app)
+      fixtures/              Manually verified expected values + committed real captured OCR fixtures
+      integration/           Real-fixture regression + OCR accuracy scoring suites
 ```
 
 ## 7. Provider and Routing Structure
@@ -214,7 +267,7 @@ Provider responsibilities:
 
 `requestGoogleAccessToken()`
 
-Creates a Google OAuth token client and requests an access token for the `drive.file` scope.
+Creates a Google OAuth token client and requests an access token for the `drive.file` scope, passing `prompt: 'select_account'` so Google always shows the account chooser instead of silently reusing whatever account already has a browser session (see §5, Account selection).
 
 `pickGoogleSpreadsheet(token)`
 
@@ -317,6 +370,10 @@ Updates an existing receipt item.
 
 Replaces receipt items after OCR/parse or another bulk load. Existing matching claims are preserved, obsolete item claims are removed, and default claims are created for new items.
 
+`updateReceiptTotals(totals)`
+
+Updates `receiptSubtotal`/`receiptTotal` independently of the item list. Unlike `setBillItems` (called once, at OCR time), this is what lets the Review screen correct a total OCR got wrong or never found — each field can be edited without clobbering the other.
+
 `addBillItem()`
 
 Creates a new manual receipt item and a default individual claim for it.
@@ -374,53 +431,82 @@ Controls the Create Party and Join Party flow:
 - Calls `restoreState` and `setParty`.
 - Offers refresh from Sheet for an already connected party.
 
+### `src/receipt/pipeline.ts` — canonical image-to-bill entry point
+
+`inferReceiptBill(image, ocr, options?)`
+
+The real entry point used by `ReceiptUpload.tsx`. Normalizes the image (decode -> detect region -> crop -> preprocess), runs the given `ReceiptOCR` implementation, then calls `parseReceipt` on the result and attaches the detected region to diagnostics. Accepts either a `Blob` (a real photo) or an already-decoded `RgbaImage` (used by the Node test harness, so the exact same code path runs in both places).
+
+### `src/receipt/image/` — deterministic image preprocessing (no ML, per the product spec)
+
+`preprocessReceiptImage(source, options?, decode?)` ([preprocess.ts](../src/receipt/image/preprocess.ts))
+
+Decodes, resizes (with `RECEIPT_PREPROCESSING.minDimension`/`maxDimension` from [settings.ts](../src/receipt/image/settings.ts)), and applies grayscale/contrast. The decoder is injectable so the same function runs against a browser `canvas` decoder or a Node-only test decoder.
+
+`detectReceiptRegion(image)` ([receiptDetector.ts](../src/receipt/image/receiptDetector.ts))
+
+Finds the receipt as the largest bright, low-saturation, roughly-solid-rectangle region in the **color** image (must run before grayscale conversion, since saturation is the signal that separates paper from skin/wood/tile backgrounds). Falls back to the full image when no region is confidently found — region detection failing must never block OCR.
+
+`normalizeReceiptImage(source, options?, decode?)` ([normalize.ts](../src/receipt/image/normalize.ts))
+
+Orchestrates detect -> crop (only above a confidence threshold) -> preprocess for one image. This is what `inferReceiptBill` calls.
+
+`cropImageData(source, bounds)` / `resizeImage(source, width, height)`
+
+Pure pixel operations shared by both the browser and the Node fixture-capture harness, so a captured OCR fixture is a faithful stand-in for what the browser actually produces.
+
+`perspective.ts` is currently dead code: it can rectify a quadrilateral, but nothing in the pipeline detects one to feed it. A future pass could wire quad detection in for skewed photos.
+
+### `src/receipt/layout/` — reconstructing structure from OCR tokens
+
+`detectLines(tokens)` ([lineDetection.ts](../src/receipt/layout/lineDetection.ts))
+
+Groups tokens into visual lines using a running mean of each row's vertical center (not the row's growing bounding box, which previously caused one tall token to snowball into merging unrelated rows together).
+
+`detectNumericColumnsDetailed(lines)` / `detectAmountColumn(lines)` ([columnDetection.ts](../src/receipt/layout/columnDetection.ts))
+
+Clusters numeric tokens by right-edge position. `detectAmountColumn` derives the column from where each line's *last* amount actually sits (not every numeric token on the page, which lets right-margin OCR noise form a denser false column) and only returns a result when one cluster clearly dominates — an uncertain column is worse than none, since committing to the wrong one rejects every genuine item row.
+
+### `src/receipt/parsing/receiptParser.ts` — the real parser
+
+`parseReceipt(result: OCRResult): ParsedBill`
+
+The core deterministic parser. For each visual line:
+
+1. `classifyLine` (see below) assigns a section: `item`, `subtotal`, `tax`, `service_charge`, `discount`, `adjustment`, `total`, `payment`, `footer`, `header`, or `unknown`.
+2. Lines are buffered (`pendingLines`) until an **anchor** line closes out an item — either a line classified `item` with its amount aligned to the detected amount column, or (for narrow receipts) a run of consecutive bare-numeric lines aligned to that column, so a quantity/rate/total split across separate physical lines still resolves into one item.
+3. `resolveQuantityAndRate` assigns quantity/rate/total roles **positionally** over the anchor's own numeric values — never by searching buffered/merged text for "a number that happens to fit," which is what previously let a printed rate get mistaken for a quantity. It also cross-validates an independently-read rate against the total and detects the specific case of a ~100x inflated/deflated total (a dropped or hallucinated decimal point), trusting the rate over a total known to be corrupted rather than deriving a wrong unit price — the total itself is never silently rewritten.
+4. A second pass over all classified lines extracts subtotal, tax components, charges, adjustments, and ranks total candidates by confidence, then reconciles `subtotal + tax + charges + adjustments` against the selected total (`ParsedBill.reconciliation`).
+
+Only bare-numeric lines (no letters at all) ever contribute a numeric value to an item; a line mixing a name with a stray number (e.g. a wrapped-name line with OCR noise) contributes only its text, never its number — this is what stops metadata or noise digits from leaking into quantity/price.
+
+### `src/receipt/parsing/sectionClassifier.ts`
+
+`classifyLine(line, seenSummary)`
+
+Classifies one line using, in order: item-header detection, summary keyword matching ([keywordMatcher.ts](../src/receipt/parsing/keywordMatcher.ts)), metadata detection (table/phone/GSTIN/date-shaped lines), then a letters/digits fallback. Keyword matching alone is never sufficient — a heading like "Cash Memo" printed above the items must not flip the parser into "summary already seen" mode before the first item.
+
+### `src/receipt/parsing/numberParser.ts`
+
+`parseMoney(input)` — context-sensitive OCR digit correction (O/o/I/l -> 0/1, only where it's unambiguous) into integer minor units, with thousands/decimal separator handling.
+
+`parseQuantity(input)` — accepts only integer-like values (spec: quantities are positive integers), never confused with a money value since callers choose which one to read based on position, not on the string's shape alone.
+
 ### `src/receipt/ocr.ts`
 
-`realReceiptOCR.extract(file)`
+`realReceiptOCR.extract(image)`
 
-Runs Tesseract OCR against an uploaded image file and returns OCR text plus word tokens with bounding boxes.
+Runs Tesseract OCR. Accepts either a `Blob` (normalizes it first via `normalizeReceiptImage`) or an already-normalized `RgbaImage`. Word-to-token mapping is shared with the Node test harness via [tesseractTokens.ts](../src/receipt/tesseractTokens.ts) so a captured fixture has the exact token shape the app sees.
 
-`mockReceiptOCR.extract(file)`
+### `src/receipt/parser.ts` — legacy major-unit adapter
 
-Returns hard-coded sample receipt text after a short delay. This is useful for development or tests if wired in.
+`toLegacyReceipt(parsed, rawText?)`
 
-`ensureWorkerReady()`
+The **only** place minor units convert to the major units (`BillItem`) the rest of the UI expects. An absent OCR quantity is surfaced as `1` here only — `ParsedBill` itself retains `null` and low confidence, since the spec requires never inventing a quantity without evidence.
 
-Creates and initializes the Tesseract worker once.
+`parseReceiptData(result)` / `parseReceiptLines(result)`
 
-### `src/receipt/parser.ts`
-
-`parseReceiptData(result)`
-
-Main receipt parser. It:
-
-- Splits OCR text into normalized lines.
-- Extracts subtotal and total summary lines.
-- Finds the item section.
-- Parses item rows.
-- Falls back to token bounding boxes if line parsing finds no items.
-
-Returns parsed items, subtotal, total, and raw text.
-
-`parseReceiptLines(result)`
-
-Convenience function that returns only parsed receipt items.
-
-`parseItemLine(line)`
-
-Attempts to parse one receipt line into a `BillItem`. It detects quantity, unit price, and total price heuristically.
-
-`findItemSection(lines)`
-
-Tries to find the part of the receipt containing item rows by detecting table headers and stopping at summary rows.
-
-`getSummaryAmount(line)`
-
-Detects subtotal, total, tax, service charge, and similar summary lines.
-
-`groupTokensIntoLines(tokens)`
-
-Uses OCR token bounding boxes to reconstruct text rows when raw OCR text is not useful enough.
+Convenience wrappers: `parseReceipt` -> `toLegacyReceipt`.
 
 ### `src/bill/claims.ts`
 
@@ -474,6 +560,12 @@ Calculates the bill summary:
 - Returns participant summaries.
 
 `settlements` is currently returned as an empty array. The app shows participant shares, but it does not yet compute payment transfer recommendations.
+
+### `src/bill/reconciliation.ts`
+
+`checkItemsAgainstReceiptTotal(items, subtotal?, total?)`
+
+Used by `ReceiptReview.tsx` to answer "does the total add up?" live, as the user edits. Compares `sum(item.totalPrice)` against the receipt's subtotal (preferred) or total (fallback) — comparing against subtotal alone is sufficient to also cover tax, since `settlement.ts` already derives `tax = total - subtotal`, so `items + tax ≈ total` reduces to `items ≈ subtotal`. Returns `'match' | 'mismatch' | 'insufficient_data'`; a mismatch is surfaced as a visible warning in Review, never used to silently alter item or receipt values.
 
 ## 9. Detailed Data Flow
 
@@ -545,17 +637,27 @@ sequenceDiagram
 
 ```mermaid
 flowchart TD
-  File[Receipt image file] --> Tesseract[realReceiptOCR.extract]
-  Tesseract --> OCRResult[OCRResult: text + tokens]
-  OCRResult --> Parser[parseReceiptData]
-  Parser --> Items[BillItem list]
-  Parser --> Totals[Subtotal/total if detected]
-  Items --> AppState[setBillItems]
-  Totals --> AppState
-  AppState --> Review[ReceiptReview]
+  File[Receipt image file] --> Decode[Decode]
+  Decode --> Detect[detectReceiptRegion on the COLOR image]
+  Detect --> Crop[Crop above confidence threshold, else use full image]
+  Crop --> Prep[Grayscale + contrast, upscale small crops]
+  Prep --> Tesseract[realReceiptOCR.extract]
+  Tesseract --> OCRResult[OCRResult: text + tokens with bounding boxes]
+  OCRResult --> Lines[detectLines: reconstruct visual rows]
+  Lines --> Columns[detectAmountColumn: find the dominant amount column]
+  Columns --> Classify[classifyLine per row: item / subtotal / tax / total / footer / ...]
+  Classify --> Items[Item-block construction: pendingLines + anchor -> resolveQuantityAndRate]
+  Classify --> Summary[Subtotal / tax / charges / adjustments / total candidates]
+  Items --> ParsedBill[ParsedBill: minor-unit items + totals + reconciliation]
+  Summary --> ParsedBill
+  ParsedBill --> Legacy[toLegacyReceipt: minor -> major units]
+  Legacy --> AppState[setBillItems]
+  AppState --> Review[ReceiptReview: editable items + editable subtotal/total + live mismatch check]
 ```
 
-OCR is currently powered by `tesseract.js`, even though the original product spec mentions PaddleOCR.js / ONNX Runtime Web.
+OCR is currently powered by `tesseract.js`, even though the original product spec mentions PaddleOCR.js / ONNX Runtime Web. Everything upstream of Tesseract (decode, region detection, crop, resize, contrast) and everything downstream of it (line/column reconstruction, classification, item parsing, reconciliation) is deterministic, non-ML code, per the spec's constraint against LLMs/VLMs/cloud OCR.
+
+A parallel Node-only path (`src/tests/receipt/support/`) drives this exact same pipeline — same decode-independent resize/crop/preprocess code, same Tesseract settings — so the four real receipt photos in `src/data/` can be captured and scored offline as a regression suite (see §14).
 
 ## 11. Calculation Rules
 
@@ -598,7 +700,7 @@ What is loaded:
 
 Current important limitation:
 
-- `receiptSubtotal` and `receiptTotal` are part of local `BillState`, but the current Sheet schema does not persist them. After a reload from Sheet, `loadParty` reconstructs items, participants, and claims, but not the parsed receipt subtotal/total.
+- `receiptSubtotal` and `receiptTotal` are part of local `BillState`, but the current Sheet schema does not persist them. After a reload from Sheet, `loadParty` reconstructs items, participants, and claims, but not the receipt subtotal/total — this now also applies to a value the user manually typed into Review's editable subtotal/total fields (`updateReceiptTotals`), not just an OCR-extracted one: either way, it is lost on reload until the Sheet schema stores it.
 - `syncRows` updates and appends rows, but it does not currently delete stale remote rows when local items, participants, or claims are removed.
 - `settlements` are not calculated yet; participant shares are calculated.
 
@@ -607,9 +709,12 @@ Current important limitation:
 From the project root:
 
 ```bash
-npm run dev
-npm run build
-npm test
+npm run dev            # Vite dev server
+npm run build          # tsc + production build
+npm test               # vitest run — all unit/integration tests, once (not watch mode)
+npm run test:watch     # vitest in watch mode
+npm run test:receipts  # accuracy suites against the four real, committed receipt photos
+CAPTURE_OCR=1 npm run test:capture   # regenerate the committed OCR fixtures (offline, deterministic)
 ```
 
 Because this workspace is used from WSL, run these commands inside WSL from the Linux-mounted project path when possible:
@@ -629,12 +734,21 @@ GOOGLE_PROJECT_NUMBER: Cloud project number used as Picker app ID
 
 ## 14. Testing Overview
 
-The project uses Vitest. Existing tests cover core parsing and bill logic:
+The project uses Vitest, run once (`vitest run`) rather than watch mode by default. Bill/claims logic:
 
-- `src/tests/parser.test.ts`
-- `src/tests/claims.test.ts`
-- `src/tests/splitting.test.ts`
-- `src/tests/settlement.test.ts`
+- `src/tests/parser.test.ts` — legacy adapter, including a real captured OCR fixture
+- `src/tests/claims.test.ts`, `src/tests/splitting.test.ts`, `src/tests/settlement.test.ts`
+- `src/tests/reconciliation.test.ts` — `checkItemsAgainstReceiptTotal`
+
+Receipt pipeline (`src/tests/receipt/`):
+
+- `parsing/` — `numberParser`, `sectionClassifier`, and `receiptParser` edge cases: the rate/quantity collision, cross-validated decimal-drop recovery, prefix-leakage prevention, quantity/rate/total split across separate lines, and the conservative "never pull a number out of a name line" boundary.
+- `layout/` — line reconstruction and numeric column detection against synthetic token geometry.
+- `image/` — region detection against synthetic `RgbaImage` fixtures (bright rectangle vs. colored/noisy background).
+- `fixtures/realReceiptFixtures.ts` — manually verified expected values for the four real photos in `src/data/`.
+- `fixtures/ocr/*.ocr.json` — **committed**, captured `OCRResult` payloads (text + token bounding boxes) for those same four photos, produced by running the real image + OCR pipeline in Node. See the README next to them: regenerating these is a deliberate act, gated behind `CAPTURE_OCR=1`, because auto-regenerating on every run would let a parser regression hide behind freshly captured input.
+- `support/` — the Node-only harness that makes this possible: `nodeImage.ts`/`nodeOcr.ts` (pure-JS/wasm decode + Tesseract, offline, using the repo's own committed `eng.traineddata`), `score.ts` (scores OCR text against a fixture's expected names/amounts), `thresholds.ts` (accuracy floors that ratchet up, never down without a documented reason). None of this is imported by application code — it exists only under `src/tests/`, confirmed to never leak into the Vite bundle.
+- `integration/` — `receiptPipeline.test.ts` (parses the four fixtures' hand-verified text), `realTokenParse.test.ts` (parses the four fixtures' *real captured tokens* — the test that reflects what the app actually does end to end), `ocrQuality.test.ts` (scores OCR text quality with recorded floors), `captureOcrFixtures.test.ts` (the `CAPTURE_OCR=1`-gated regeneration job). `ocrTuning.test.ts`, `debugLines.test.ts`, and `cropProbe.test.ts` are exploratory dev tooling for manually sweeping preprocessing settings or inspecting line reconstruction — gated behind their own env vars, not part of a normal `npm test` run.
 
 Recommended future test additions:
 
@@ -654,8 +768,13 @@ These are not bugs in this document; they are the current implementation boundar
 - No Drive permission management.
 - No realtime multi-user conflict handling.
 - No stale-row deletion in Google Sheets sync.
-- No Sheet persistence for receipt subtotal/total.
+- No Sheet persistence for receipt subtotal/total — including a value the user manually typed into Review, not just an OCR-extracted one (see §12).
 - No settlement transfer optimization yet.
 - OCR implementation uses Tesseract, while the product spec references PaddleOCR.js.
+- Perspective correction (`image/perspective.ts`) is unused — nothing in the pipeline detects a receipt quadrilateral to feed it, so a skewed photo is never rectified before OCR.
+- A dropped/hallucinated decimal point on a printed total is only detectable when a row has an independently-read rate to cross-validate against (3+ numeric values). A 2-value row (quantity + total only, no separate rate) has no second number to check it against, so this class of OCR error is only caught, if at all, by the bill-level items-vs-subtotal mismatch check in Review, not row-locally.
+- The OCR pipeline's own `ParsedBill.reconciliation` (whether the receipt's *printed* summary section is internally consistent) is computed but not surfaced in the UI — only the live items-vs-subtotal/total check added to Review (`checkItemsAgainstReceiptTotal`, recomputed as the user edits) is currently shown to the user.
+- If a receipt's total is genuinely never known (only subtotal, or neither), `calculateBillResults` derives tax as `total - subtotal`, which silently becomes `0` rather than "unknown" in that case — pre-existing behavior, more likely to surface now that totals are directly editable in Review.
+- Google sign-in now always shows the account chooser (`prompt: 'select_account'`), but the resulting token is cached for the lifetime of the page load (`AuthContext`) — there's no "switch account" affordance short of a full reload or `signOut()` (which itself isn't wired into any UI yet).
 
-The most valuable next hardening work would be to persist subtotal/total in `META` or a dedicated totals tab, add stale-row deletion, and add tests for the Google Sheet adapter.
+The most valuable next hardening work would be to persist subtotal/total in `META` or a dedicated totals tab, add stale-row deletion, add tests for the Google Sheet adapter, and wire quadrilateral detection into the image pipeline so perspective correction stops being dead code.

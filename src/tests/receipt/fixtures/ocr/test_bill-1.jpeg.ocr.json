@@ -1,0 +1,454 @@
+{
+  "sourceFile": "test_bill-1.jpeg",
+  "imageWidth": 1748,
+  "imageHeight": 1900,
+  "detectedReceiptRegion": {
+    "x": 0,
+    "y": 324,
+    "width": 552,
+    "height": 600
+  },
+  "text": "DRI MAHAL KM\n[IFFIN ROOY\nBENGALURL- 14\noo | IN:29ABUPU4S32E 1 24\ne . -CASH/BILL......\n[48LE 0005    CUR 01 WAITER 00\n§). 000329                JATE:-16-08-2026\nol e\nWi oo\n34K LOFFEE        1.00 78.00  28.00\nCASH ¥ 178.00\nINPOSITION TAX DEALER         |\nel                   H/C NU       l\n",
+  "tokens": [
+    {
+      "text": "DRI",
+      "confidence": 31.776535034179688,
+      "boundingBox": {
+        "x": 238,
+        "y": 139,
+        "width": 180,
+        "height": 74
+      }
+    },
+    {
+      "text": "MAHAL",
+      "confidence": 40.92449951171875,
+      "boundingBox": {
+        "x": 526,
+        "y": 155,
+        "width": 295,
+        "height": 77
+      }
+    },
+    {
+      "text": "KM",
+      "confidence": 0,
+      "boundingBox": {
+        "x": 878,
+        "y": 187,
+        "width": 307,
+        "height": 60
+      }
+    },
+    {
+      "text": "[IFFIN",
+      "confidence": 13.7530517578125,
+      "boundingBox": {
+        "x": 604,
+        "y": 247,
+        "width": 201,
+        "height": 72
+      }
+    },
+    {
+      "text": "ROOY",
+      "confidence": 63.483097076416016,
+      "boundingBox": {
+        "x": 846,
+        "y": 260,
+        "width": 132,
+        "height": 63
+      }
+    },
+    {
+      "text": "BENGALURL-",
+      "confidence": 18.49524688720703,
+      "boundingBox": {
+        "x": 602,
+        "y": 346,
+        "width": 339,
+        "height": 76
+      }
+    },
+    {
+      "text": "14",
+      "confidence": 36.66025161743164,
+      "boundingBox": {
+        "x": 969,
+        "y": 361,
+        "width": 44,
+        "height": 66
+      }
+    },
+    {
+      "text": "oo",
+      "confidence": 40.49842071533203,
+      "boundingBox": {
+        "x": 422,
+        "y": 440,
+        "width": 63,
+        "height": 73
+      }
+    },
+    {
+      "text": "|",
+      "confidence": 58.40828323364258,
+      "boundingBox": {
+        "x": 509,
+        "y": 440,
+        "width": 11,
+        "height": 73
+      }
+    },
+    {
+      "text": "IN:29ABUPU4S32E",
+      "confidence": 0,
+      "boundingBox": {
+        "x": 532,
+        "y": 440,
+        "width": 509,
+        "height": 79
+      }
+    },
+    {
+      "text": "1",
+      "confidence": 57.923274993896484,
+      "boundingBox": {
+        "x": 1076,
+        "y": 456,
+        "width": 11,
+        "height": 63
+      }
+    },
+    {
+      "text": "24",
+      "confidence": 88.23089599609375,
+      "boundingBox": {
+        "x": 1102,
+        "y": 453,
+        "width": 57,
+        "height": 66
+      }
+    },
+    {
+      "text": "e",
+      "confidence": 40.39459228515625,
+      "boundingBox": {
+        "x": 110,
+        "y": 599,
+        "width": 164,
+        "height": 16
+      }
+    },
+    {
+      "text": ".",
+      "confidence": 73.03184509277344,
+      "boundingBox": {
+        "x": 330,
+        "y": 598,
+        "width": 24,
+        "height": 10
+      }
+    },
+    {
+      "text": "-CASH/BILL......",
+      "confidence": 49.71173858642578,
+      "boundingBox": {
+        "x": 406,
+        "y": 539,
+        "width": 1072,
+        "height": 81
+      }
+    },
+    {
+      "text": "[48LE",
+      "confidence": 58.23944854736328,
+      "boundingBox": {
+        "x": 140,
+        "y": 646,
+        "width": 167,
+        "height": 80
+      }
+    },
+    {
+      "text": "0005",
+      "confidence": 48.36192321777344,
+      "boundingBox": {
+        "x": 389,
+        "y": 642,
+        "width": 139,
+        "height": 77
+      }
+    },
+    {
+      "text": "CUR",
+      "confidence": 45.264278411865234,
+      "boundingBox": {
+        "x": 899,
+        "y": 640,
+        "width": 98,
+        "height": 72
+      }
+    },
+    {
+      "text": "01",
+      "confidence": 56.587364196777344,
+      "boundingBox": {
+        "x": 1045,
+        "y": 642,
+        "width": 54,
+        "height": 68
+      }
+    },
+    {
+      "text": "WAITER",
+      "confidence": 64.7203598022461,
+      "boundingBox": {
+        "x": 1182,
+        "y": 643,
+        "width": 195,
+        "height": 69
+      }
+    },
+    {
+      "text": "00",
+      "confidence": 67.49186706542969,
+      "boundingBox": {
+        "x": 1460,
+        "y": 646,
+        "width": 53,
+        "height": 66
+      }
+    },
+    {
+      "text": "§).",
+      "confidence": 0,
+      "boundingBox": {
+        "x": 105,
+        "y": 750,
+        "width": 89,
+        "height": 76
+      }
+    },
+    {
+      "text": "000329",
+      "confidence": 10.818290710449219,
+      "boundingBox": {
+        "x": 216,
+        "y": 745,
+        "width": 198,
+        "height": 79
+      }
+    },
+    {
+      "text": "JATE:-16-08-2026",
+      "confidence": 31.77025604248047,
+      "boundingBox": {
+        "x": 982,
+        "y": 735,
+        "width": 541,
+        "height": 76
+      }
+    },
+    {
+      "text": "ol",
+      "confidence": 4.7954254150390625,
+      "boundingBox": {
+        "x": 114,
+        "y": 886,
+        "width": 1131,
+        "height": 144
+      }
+    },
+    {
+      "text": "e",
+      "confidence": 0,
+      "boundingBox": {
+        "x": 1108,
+        "y": 837,
+        "width": 129,
+        "height": 255
+      }
+    },
+    {
+      "text": "Wi",
+      "confidence": 59.09602737426758,
+      "boundingBox": {
+        "x": 121,
+        "y": 1105,
+        "width": 202,
+        "height": 124
+      }
+    },
+    {
+      "text": "oo",
+      "confidence": 1.2762298583984375,
+      "boundingBox": {
+        "x": 339,
+        "y": 1086,
+        "width": 949,
+        "height": 143
+      }
+    },
+    {
+      "text": "34K",
+      "confidence": 40.7634162902832,
+      "boundingBox": {
+        "x": 127,
+        "y": 1254,
+        "width": 164,
+        "height": 76
+      }
+    },
+    {
+      "text": "LOFFEE",
+      "confidence": 17.204483032226562,
+      "boundingBox": {
+        "x": 335,
+        "y": 1251,
+        "width": 207,
+        "height": 79
+      }
+    },
+    {
+      "text": "1.00",
+      "confidence": 78.60693359375,
+      "boundingBox": {
+        "x": 848,
+        "y": 1241,
+        "width": 130,
+        "height": 80
+      }
+    },
+    {
+      "text": "78.00",
+      "confidence": 60.82267761230469,
+      "boundingBox": {
+        "x": 1061,
+        "y": 1238,
+        "width": 171,
+        "height": 77
+      }
+    },
+    {
+      "text": " 28.00",
+      "confidence": 60.82267761230469,
+      "boundingBox": {
+        "x": 1393,
+        "y": 1229,
+        "width": 161,
+        "height": 78
+      }
+    },
+    {
+      "text": "CASH",
+      "confidence": 64.39612579345703,
+      "boundingBox": {
+        "x": 139,
+        "y": 1406,
+        "width": 263,
+        "height": 161
+      }
+    },
+    {
+      "text": "¥",
+      "confidence": 58.82781982421875,
+      "boundingBox": {
+        "x": 761,
+        "y": 1394,
+        "width": 290,
+        "height": 117
+      }
+    },
+    {
+      "text": "178.00",
+      "confidence": 91.94615173339844,
+      "boundingBox": {
+        "x": 1073,
+        "y": 1387,
+        "width": 485,
+        "height": 133
+      }
+    },
+    {
+      "text": "INPOSITION",
+      "confidence": 0,
+      "boundingBox": {
+        "x": 152,
+        "y": 1546,
+        "width": 368,
+        "height": 91
+      }
+    },
+    {
+      "text": "TAX",
+      "confidence": 12.990066528320312,
+      "boundingBox": {
+        "x": 557,
+        "y": 1551,
+        "width": 104,
+        "height": 83
+      }
+    },
+    {
+      "text": "DEALER",
+      "confidence": 66.01950073242188,
+      "boundingBox": {
+        "x": 703,
+        "y": 1548,
+        "width": 212,
+        "height": 83
+      }
+    },
+    {
+      "text": "|",
+      "confidence": 87.31937408447266,
+      "boundingBox": {
+        "x": 1261,
+        "y": 1641,
+        "width": 6,
+        "height": 6
+      }
+    },
+    {
+      "text": "el",
+      "confidence": 13.878089904785156,
+      "boundingBox": {
+        "x": 124,
+        "y": 1660,
+        "width": 78,
+        "height": 27
+      }
+    },
+    {
+      "text": "H/C",
+      "confidence": 54.29666519165039,
+      "boundingBox": {
+        "x": 1073,
+        "y": 1643,
+        "width": 99,
+        "height": 79
+      }
+    },
+    {
+      "text": "NU",
+      "confidence": 85.68817901611328,
+      "boundingBox": {
+        "x": 1216,
+        "y": 1647,
+        "width": 66,
+        "height": 69
+      }
+    },
+    {
+      "text": "l",
+      "confidence": 94.80876159667969,
+      "boundingBox": {
+        "x": 1551,
+        "y": 1634,
+        "width": 10,
+        "height": 72
+      }
+    }
+  ]
+}
