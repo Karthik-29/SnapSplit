@@ -1,5 +1,6 @@
 import { BillItem } from '../receipt/models';
 import { BillCalculationResult, ItemClaim, Participant, ParticipantSummary, SettlementLine } from './models';
+import { getTotalClaimedQuantity } from './claims';
 import { calculateIndividualShares, splitSharedItemEvenly } from './splitting';
 
 function sum(values: number[]): number {
@@ -27,6 +28,8 @@ export function calculateBillResults(
     return acc;
   }, {});
 
+  const itemsNeedingReview: Array<{ id: string; name: string }> = [];
+
   for (const claim of itemClaims) {
     const item = itemMap[claim.itemId];
     if (!item) {
@@ -39,6 +42,14 @@ export function calculateBillResults(
         shares[participantId] += split[participantId];
       }
     } else {
+      // An item's quantity can be edited down in Review after claims already
+      // exist. The stored claim is never rewritten for this — see
+      // `capIndividualQuantities` — but the discrepancy must still be visible
+      // somewhere, since a wrong-looking settlement number with no
+      // explanation is worse than a flagged one.
+      if (getTotalClaimedQuantity(claim) > item.quantity) {
+        itemsNeedingReview.push({ id: item.id, name: item.name });
+      }
       const individual = calculateIndividualShares(item, claim.individualQuantities);
       for (const [participantId, amount] of Object.entries(individual)) {
         shares[participantId] += amount;
@@ -90,5 +101,6 @@ export function calculateBillResults(
     tax,
     participantSummaries,
     settlements: [],
+    itemsNeedingReview,
   };
 }

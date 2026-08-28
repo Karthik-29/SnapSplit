@@ -67,6 +67,8 @@ flowchart TD
 
 The party screen appears before receipt upload. Each user must select the shared Sheet in Google Picker. This establishes per-file access under the `drive.file` scope; bill edits made after that point can be saved to the party Sheet.
 
+**Role gates Upload.** Creating a party sets `role: 'owner'`; joining an existing one sets `role: 'participant'` (see `Party` in [party.ts](../src/google/party.ts)). Only an owner sees the Upload link and lands on the upload screen at `/`; a participant lands on Review instead, since the owner's receipt already exists there and a participant re-uploading would silently overwrite the shared bill via `PartySync`. This is a client-side UI hint only — it is never written to the Sheet, and Drive/Sheets sharing permissions remain the actual access control.
+
 The Review step is where the user corrects OCR mistakes: item names, quantities, and unit prices are editable inline, and the receipt's own subtotal/total are now also directly editable (see §8, `checkItemsAgainstReceiptTotal`) rather than being a fixed, un-correctable value carried over from OCR.
 
 ## 3. State Model
@@ -169,7 +171,7 @@ src/
 
   google/
     auth.ts                  Google Identity Services and OAuth token handling
-    party.ts                 Sheet schema, load, initialize, and sync operations
+    party.ts                 Sheet schema, load, initialize, and sync operations; Party.role (client-side only, see §2)
 
   receipt/
     models.ts                Receipt, OCR, RgbaImage, and bill item types
@@ -186,6 +188,9 @@ src/
       receiptDetector.ts       Finds the receipt as a bright, low-saturation, roughly solid region (on the COLOR image)
       crop.ts                  Crops RgbaImage to a detected region; encodes to PNG for the OCR engine
       normalize.ts             Orchestrates detect -> crop -> preprocess for one receipt image
+      illumination.ts          Flat-field/shadow correction (true sliding-window box blur) -- implemented and
+                                 empirically swept against all four real photos, but disabled by default: no tested
+                                 configuration beat "off" without regressing at least one other receipt (see §8)
       perspective.ts           Perspective correction for a detected quadrilateral -- unused: nothing currently
                                  produces a quadrilateral to feed it (dead code, kept for a future pass)
 
@@ -201,11 +206,11 @@ src/
       receiptParser.ts         The real parser: parseReceipt(OCRResult) -> ParsedBill
 
   bill/
-    models.ts                Bill, participant, claim, settlement types
+    models.ts                Bill, participant, claim, settlement types; BillCalculationResult.itemsNeedingReview
     claims.ts                Claim helpers and default claim construction
-    splitting.ts             Item splitting helpers
-    settlement.ts            Per-participant bill calculation
-    reconciliation.ts        checkItemsAgainstReceiptTotal: live items-vs-receipt-total check for Review
+    splitting.ts             Item splitting helpers, including capIndividualQuantities (over-claim capping)
+    settlement.ts            Per-participant bill calculation; flags over-claimed items for review
+    reconciliation.ts        checkItemsAgainstReceiptTotal: live items-vs-receipt-total + totalBelowSubtotal check for Review
 
   routes/
     PartyPage.tsx            Create/join/refresh party screen
@@ -219,10 +224,10 @@ src/
   components/
     PartySync.tsx            Debounced autosync from AppContext to Google Sheet
     ReceiptUpload.tsx        Upload image, run inferReceiptBill, convert via toLegacyReceipt
-    ReceiptReview.tsx        Edit parsed items and receipt subtotal/total; shows live mismatch warning
+    ReceiptReview.tsx        Edit parsed items and receipt subtotal/total; shows live mismatch and totalBelowSubtotal warnings
     Participants.tsx         Add/remove people
     ItemClaim.tsx            Individual/shared item claiming UI
-    Settlement.tsx           Show calculated participant shares
+    Settlement.tsx           Show calculated participant shares; warns when itemsNeedingReview is non-empty
     SheetExport.tsx          Show current Google Sheet party connection
 
   tests/
@@ -257,8 +262,8 @@ Provider responsibilities:
 `src/App.tsx` gates the workflow:
 
 - If no party is connected, `/` renders `PartyPage`.
-- If a party is connected, `/` renders `ReceiptUploadPage`.
-- Workflow routes are shown in navigation only after a party is open.
+- If a party is connected and `party.role === 'owner'`, `/` renders `ReceiptUploadPage`; otherwise (a participant who joined) `/` renders `ReceiptReviewPage`, since the owner's receipt already exists and re-uploading would overwrite it via `PartySync`.
+- Workflow routes are shown in navigation only after a party is open; the Upload link itself is shown only for `role === 'owner'`.
 - `/party` is always available so users can create, join, refresh, or view the current party.
 
 ## 8. Key Functions by Module
@@ -306,6 +311,7 @@ Reads a SnapSplit Sheet and reconstructs `BillState`:
 - Validates `META.schema_version` is `1`.
 - Reads `USERS`, `ITEMS`, and `CLAIMS`.
 - Converts Sheet rows into participants, receipt items, and item claims.
+- Returns `Omit<Party, 'role'>` — the Sheet has no concept of role, so the caller (`PartyPage`, based on whether it called this after create or join) attaches `role` itself.
 
 `syncParty(token, party)`
 
@@ -453,7 +459,11 @@ Orchestrates detect -> crop (only above a confidence threshold) -> preprocess fo
 
 `cropImageData(source, bounds)` / `resizeImage(source, width, height)`
 
-Pure pixel operations shared by both the browser and the Node fixture-capture harness, so a captured OCR fixture is a faithful stand-in for what the browser actually produces.
+Pure pixel operations shared by both the browser and the Node fixture-capture harness. **Decoding itself is not shared** — the browser decodes via `createImageBitmap`+canvas ([decode.ts](../src/receipt/image/decode.ts)) while the Node harness uses its own codecs ([nodeImage.ts](../src/tests/receipt/support/nodeImage.ts)) — and for JPEGs this used to be a real, silent divergence: a pure-JS reference decoder (`jpeg-js`) produced measurably different pixels than a browser's own decoder, confirmed by a literal OCR-text mismatch against a live browser session for the same file. Fixed by switching the Node harness's JPEG decoding to `@jsquash/jpeg` (a WASM build of mozjpeg), after which Node's output matched the browser's exactly for the file it was checked against. WebP decoding (`@cwasm/webp`) was never in question and is unaffected. See §14 for the accuracy-number recalibration this required.
+
+`correctIllumination(image, options?)` ([illumination.ts](../src/receipt/image/illumination.ts))
+
+Flat-field correction: divides each pixel by a heavily-blurred estimate of the local background (a true separable sliding-window box blur, not a resize-based approximation — an earlier resize-downscale/upscale version produced a large apparent win at one exact pixel size that vanished at neighboring sizes, a resampling-grid artifact rather than a real effect), then rescales toward a canonical paper brightness. A `shadowOnlyThreshold` option limits correction to pixels whose local background sits meaningfully below target, leaving already-fine regions untouched. **Implemented and swept against all four real photos, but disabled by default** ([settings.ts](../src/receipt/image/settings.ts)): every configuration that helped the one genuinely shadowed receipt (`test_bill-2.jpeg`) measurably hurt at least one of the other three, and a background-variance-based gate was tried and found not to cleanly separate "needs correction" from "doesn't" either. Kept as real, working, tested tooling for a future attempt (e.g. per-region rather than global gating), not shipped on a hunch.
 
 `perspective.ts` is currently dead code: it can rectify a quadrilateral, but nothing in the pipeline detects one to feed it. A future pass could wire quad detection in for skewed photos.
 
@@ -480,6 +490,10 @@ The core deterministic parser. For each visual line:
 
 Only bare-numeric lines (no letters at all) ever contribute a numeric value to an item; a line mixing a name with a stray number (e.g. a wrapped-name line with OCR noise) contributes only its text, never its number — this is what stops metadata or noise digits from leaking into quantity/price.
 
+`amountsOf`'s candidate-token filter requires a token to be **predominantly numeric** (`isAmountLikeToken`), not merely digit-containing. This closed a real bug found against a real photo: OCR misread the name "BLACK" as "34K" (a name fragment, not an amount), and the old `/\d/`-only filter let it through as a candidate value, corrupting that row's positional quantity/rate assignment. The same filter also stopped discarding a genuine amount outright just because it ends in `%`: `isRateAnnotation` now only excludes a token shaped like a genuine rate annotation (`@2.5%`, no currency symbol) rather than any token containing `%`/`@` at all, which previously threw away a real subtotal that OCR'd as `"$45.8%"` (its printed `$45.85`, with the final `5` misread as `%`) — the token is still handed to `parseMoney` and the recovered value is honestly short by the one lost digit, not fabricated back.
+
+`parseItem`'s `MAX_PLAUSIBLE_ITEM_QUANTITY` (50) rejects a whole row outright when its resolved quantity exceeds it — not just the quantity field, the entire row, since `resolveQuantityAndRate`'s own cross-validation (`quantity * rate == total`) is exactly the evidence that made an implausible row look trustworthy in the first place. This closed a real bug: a garbled non-item line on a real receipt (likely a mangled summary/footer row) read as "200 75.00 15000" — internally consistent (200 × 75.00 = 15000 exactly) and therefore invisible to any arithmetic sanity check — was parsed as a genuine ₹15,000 phantom item. No real receipt in `realReceiptFixtures.ts` prints a line-item quantity above 4, so 50 leaves wide, deliberate margin.
+
 ### `src/receipt/parsing/sectionClassifier.ts`
 
 `classifyLine(line, seenSummary)`
@@ -497,6 +511,8 @@ Classifies one line using, in order: item-header detection, summary keyword matc
 `realReceiptOCR.extract(image)`
 
 Runs Tesseract OCR. Accepts either a `Blob` (normalizes it first via `normalizeReceiptImage`) or an already-normalized `RgbaImage`. Word-to-token mapping is shared with the Node test harness via [tesseractTokens.ts](../src/receipt/tesseractTokens.ts) so a captured fixture has the exact token shape the app sees.
+
+`ensureWorkerReady()` explicitly points `createWorker`'s `langPath` at `public/eng.traineddata.gz` (served from the site root) instead of leaving it at tesseract.js's default — `https://tessdata.projectnaptha.com/4.0.0`, a third-party CDN with **no relationship to this repo's own committed `eng.traineddata`**, the exact file the Node capture harness ([nodeOcr.ts](../src/tests/receipt/support/nodeOcr.ts)) loads and every OCR-quality score in this repo is measured against. Before this fix, every accuracy number this repo tests for described a model the browser never actually used, so real browser OCR quality could differ substantially — often worse — from what `npm run test:receipts` reports, with no test able to catch it. `public/eng.traineddata.gz` is a gzip of the exact same repo-root file (regenerate with `node -e "require('zlib').gzipSync(...)"` if `eng.traineddata` is ever updated — see the comment in `ocr.ts`). `cachePath` is also set to a distinct value so a browser that already cached the old CDN-fetched model in IndexedDB fetches the local one instead of silently reusing the stale entry.
 
 ### `src/receipt/parser.ts` — legacy major-unit adapter
 
@@ -542,7 +558,11 @@ Splits an item total evenly across selected participants. Any whole-number remai
 
 `calculateIndividualShares(item, claimQuantities)`
 
-Multiplies each participant's claimed quantity by the item unit price.
+Multiplies each participant's claimed quantity by the item unit price. Calls `capIndividualQuantities` first (below), so a claim that's since become too large for the item never inflates the calculated share.
+
+`capIndividualQuantities(item, claimQuantities)`
+
+If the claimed quantities sum to more than `item.quantity` — e.g. the item's quantity was edited down in Review after claims already existed — proportionally scales every participant's claimed quantity down to fit, using the same `Math.floor` base-share-plus-remainder rule as `splitSharedItemEvenly`, so the scaled quantities sum exactly to `item.quantity`. This is a **calculation-time view only**: the stored `ItemClaim` is never mutated, since silently rewriting what a specific participant is recorded as having claimed would be worse than a visibly-flagged discrepancy (see `itemsNeedingReview` below). Returns `claimQuantities` unchanged when there's no over-claim.
 
 ### `src/bill/settlement.ts`
 
@@ -552,12 +572,13 @@ Calculates the bill summary:
 
 - Builds per-participant item shares.
 - Uses shared mode to split items equally among selected participants.
-- Uses individual mode to multiply claimed quantities by unit price.
+- Uses individual mode to multiply claimed quantities by unit price (capped via `capIndividualQuantities` when over-claimed).
+- Detects, per individual-mode claim, whether `getTotalClaimedQuantity(claim) > item.quantity` and collects those items into `BillCalculationResult.itemsNeedingReview: Array<{ id, name }>`, surfaced as a warning in `Settlement.tsx`.
 - Computes item subtotal.
 - Uses receipt subtotal and total when available.
 - Treats `total - subtotal` as tax/extra charges when positive.
 - Allocates tax proportionally to each participant's item share.
-- Returns participant summaries.
+- Returns participant summaries; `sum(participantSummaries.share)` always equals the item's real total even when a stored claim is over-quantity, since the cap applies before shares are computed.
 
 `settlements` is currently returned as an empty array. The app shows participant shares, but it does not yet compute payment transfer recommendations.
 
@@ -566,6 +587,8 @@ Calculates the bill summary:
 `checkItemsAgainstReceiptTotal(items, subtotal?, total?)`
 
 Used by `ReceiptReview.tsx` to answer "does the total add up?" live, as the user edits. Compares `sum(item.totalPrice)` against the receipt's subtotal (preferred) or total (fallback) — comparing against subtotal alone is sufficient to also cover tax, since `settlement.ts` already derives `tax = total - subtotal`, so `items + tax ≈ total` reduces to `items ≈ subtotal`. Returns `'match' | 'mismatch' | 'insufficient_data'`; a mismatch is surfaced as a visible warning in Review, never used to silently alter item or receipt values.
+
+Also returns `totalBelowSubtotal: boolean` — true whenever both subtotal and total are known and total is less than subtotal. This is a directional plausibility check independent of the match/mismatch status above: a payable total can never be lower than the pre-tax subtotal it was built from, so this fires even when the items-vs-subtotal comparison would otherwise stay quiet, and is rendered as its own, separately-worded warning in `ReceiptReview.tsx`.
 
 ## 9. Detailed Data Flow
 
@@ -589,7 +612,7 @@ sequenceDiagram
   P->>G: loadParty(token, spreadsheetId)
   G-->>P: BillState
   P->>C: restoreState(party.state)
-  P->>PC: setParty(party)
+  P->>PC: setParty({ ...party, role: 'owner' })
   P->>U: Navigate to upload
 ```
 
@@ -611,7 +634,8 @@ sequenceDiagram
   P->>G: loadParty(token, spreadsheetId)
   G-->>P: Existing BillState
   P->>C: restoreState(party.state)
-  P->>PC: setParty(party)
+  P->>PC: setParty({ ...party, role: 'participant' })
+  P->>U: Navigate to review (not upload)
 ```
 
 ### Editing and Autosaving
@@ -737,8 +761,9 @@ GOOGLE_PROJECT_NUMBER: Cloud project number used as Picker app ID
 The project uses Vitest, run once (`vitest run`) rather than watch mode by default. Bill/claims logic:
 
 - `src/tests/parser.test.ts` — legacy adapter, including a real captured OCR fixture
-- `src/tests/claims.test.ts`, `src/tests/splitting.test.ts`, `src/tests/settlement.test.ts`
-- `src/tests/reconciliation.test.ts` — `checkItemsAgainstReceiptTotal`
+- `src/tests/claims.test.ts`, `src/tests/splitting.test.ts`
+- `src/tests/settlement.test.ts` — including an over-claimed-then-quantity-reduced scenario asserting `sum(participantSummaries.share) === item.totalPrice` and that `itemsNeedingReview` names the affected item, without the stored claim itself ever changing
+- `src/tests/reconciliation.test.ts` — `checkItemsAgainstReceiptTotal` synthetic cases, `totalBelowSubtotal` cases, and an integration suite running the real parser end-to-end (`toLegacyReceipt(parseReceipt(...))`) against all four real captured receipts
 
 Receipt pipeline (`src/tests/receipt/`):
 
@@ -747,8 +772,9 @@ Receipt pipeline (`src/tests/receipt/`):
 - `image/` — region detection against synthetic `RgbaImage` fixtures (bright rectangle vs. colored/noisy background).
 - `fixtures/realReceiptFixtures.ts` — manually verified expected values for the four real photos in `src/data/`.
 - `fixtures/ocr/*.ocr.json` — **committed**, captured `OCRResult` payloads (text + token bounding boxes) for those same four photos, produced by running the real image + OCR pipeline in Node. See the README next to them: regenerating these is a deliberate act, gated behind `CAPTURE_OCR=1`, because auto-regenerating on every run would let a parser regression hide behind freshly captured input.
-- `support/` — the Node-only harness that makes this possible: `nodeImage.ts`/`nodeOcr.ts` (pure-JS/wasm decode + Tesseract, offline, using the repo's own committed `eng.traineddata`), `score.ts` (scores OCR text against a fixture's expected names/amounts), `thresholds.ts` (accuracy floors that ratchet up, never down without a documented reason). None of this is imported by application code — it exists only under `src/tests/`, confirmed to never leak into the Vite bundle.
-- `integration/` — `receiptPipeline.test.ts` (parses the four fixtures' hand-verified text), `realTokenParse.test.ts` (parses the four fixtures' *real captured tokens* — the test that reflects what the app actually does end to end), `ocrQuality.test.ts` (scores OCR text quality with recorded floors), `captureOcrFixtures.test.ts` (the `CAPTURE_OCR=1`-gated regeneration job). `ocrTuning.test.ts`, `debugLines.test.ts`, and `cropProbe.test.ts` are exploratory dev tooling for manually sweeping preprocessing settings or inspecting line reconstruction — gated behind their own env vars, not part of a normal `npm test` run.
+- `support/` — the Node-only harness that makes this possible: `nodeImage.ts`/`nodeOcr.ts` (WASM/pure-JS decode + Tesseract, offline, using the repo's own committed `eng.traineddata`), `score.ts` (scores OCR text against a fixture's expected names/amounts), `thresholds.ts` (accuracy floors that ratchet up, never down without a documented reason). None of this is imported by application code — it exists only under `src/tests/`, confirmed to never leak into the Vite bundle.
+  - **Accuracy numbers were recalibrated once** (see thresholds.ts's own comments): `nodeImage.ts` originally decoded JPEGs with `jpeg-js`, a pure-JS reference decoder that turned out to produce measurably different pixels than a browser's own `createImageBitmap`+canvas decode — confirmed by a literal OCR-text mismatch against a real browser session for the identical file. Now decoded with `@jsquash/jpeg` (a WASM mozjpeg build), after which Node's captured output matched the browser's exactly. The honest, corrected aggregate score is **75.7%** (previously reported as 86.1%/84.4% at different points — those numbers were real measurements, just of a decoder nobody's browser used). Every `OCR_QUALITY_FLOOR`/`PARSED_ITEM_COUNT` entry and every `realTokenParse.test.ts` field-level assertion was re-verified against the corrected fixtures, not just re-lowered to make the suite pass.
+- `integration/` — `receiptPipeline.test.ts` (parses the four fixtures' hand-verified text), `realTokenParse.test.ts` (parses the four fixtures' *real captured tokens* — the test that reflects what the app actually does end to end; asserts exact name/quantity/unitPrice/totalPrice for every item the pipeline currently gets right, e.g. all 4 items on `example_bill.webp`, `subtotal.source === 'ocr'` on `sample_bill.jpg` as a regression test for the `%`-recovery fix, the recovered BLACK COFFEE row on `test_bill-1.jpeg` with MASALA DOSA documented as an accepted gap, and 3 of 5 correct item totals on `test_bill-2.jpeg` confirmed against a live browser session), `ocrQuality.test.ts` (scores OCR text quality with recorded floors), `captureOcrFixtures.test.ts` (the `CAPTURE_OCR=1`-gated regeneration job). `ocrTuning.test.ts`, `debugLines.test.ts`, `cropProbe.test.ts`, `illuminationSweep.test.ts`, and `illuminationVariance.test.ts` are exploratory dev tooling for manually sweeping preprocessing settings, inspecting line reconstruction, or evaluating illumination-correction configurations/gating signals — gated behind their own env vars, not part of a normal `npm test` run.
 
 Recommended future test additions:
 
@@ -772,6 +798,11 @@ These are not bugs in this document; they are the current implementation boundar
 - No settlement transfer optimization yet.
 - OCR implementation uses Tesseract, while the product spec references PaddleOCR.js.
 - Perspective correction (`image/perspective.ts`) is unused — nothing in the pipeline detects a receipt quadrilateral to feed it, so a skewed photo is never rectified before OCR.
+- `public/eng.traineddata.gz` is a generated artifact (gzip of the repo-root `eng.traineddata`), not auto-regenerated — if the root file is ever updated, the gzip copy must be regenerated by hand or the browser and the Node test harness silently diverge again (see §8, `src/receipt/ocr.ts`).
+- Illumination/shadow correction (`image/illumination.ts`) is implemented and empirically tested but disabled by default. Re-swept after fixing the JPEG-decoder divergence (see §14): the *aggregate text-similarity score* looked like a clean win (73.2% → 84.4%), but checking actual parsed items showed it trades one set of problems for a worse one — a real item corrupted to an invented total on `sample_bill.jpg`, items wrongly merging on `test_bill-2.jpeg`, and GST/Round Off summary lines misread as fake phantom items. A higher text-similarity score is not the same thing as a trustworthy item list. A locally-shadowed receipt (`test_bill-2.jpeg`'s middle-right band) still loses some items to OCR corruption that no parser-side fix has yet recovered without introducing a worse failure elsewhere.
+- ~~Known, unfixed risk on `test_bill-1.jpeg`: a phantom ₹15,000 item from a garbled summary/footer line.~~ **Fixed**: `parseItem`'s `MAX_PLAUSIBLE_ITEM_QUANTITY` guard (see §8) rejects any row whose resolved quantity exceeds 50 — the row's internal consistency (`quantity × rate == total`) was exactly what made it look trustworthy, so an implausible quantity is now treated as proof the whole row isn't a genuine item.
+- ~~Whole-number currency amounts displayed without their decimal places (e.g. a ₹250.00 item showing as "250") in `ReceiptReview.tsx` and `ItemClaim.tsx`, since several `<td>{value}</td>`-style displays rendered raw JS numbers instead of `value.toFixed(2)`.~~ **Fixed**: every currency display across Review and Item Claims now formats with `.toFixed(2)`, matching the convention `Settlement.tsx` already used. This was a display bug, not an OCR or parsing issue — the underlying stored values were always correct.
+- Component-level UI tests (e.g. for the owner/participant Upload-link gating in `App.tsx`) are not present: this repo has no jsdom/happy-dom test environment configured, and adding one just for a single assertion was judged not worth introducing a first-of-its-kind RTL setup. That behavior is currently verified manually via `npm run dev` instead, consistent with how the rest of the UI is checked.
 - A dropped/hallucinated decimal point on a printed total is only detectable when a row has an independently-read rate to cross-validate against (3+ numeric values). A 2-value row (quantity + total only, no separate rate) has no second number to check it against, so this class of OCR error is only caught, if at all, by the bill-level items-vs-subtotal mismatch check in Review, not row-locally.
 - The OCR pipeline's own `ParsedBill.reconciliation` (whether the receipt's *printed* summary section is internally consistent) is computed but not surfaced in the UI — only the live items-vs-subtotal/total check added to Review (`checkItemsAgainstReceiptTotal`, recomputed as the user edits) is currently shown to the user.
 - If a receipt's total is genuinely never known (only subtotal, or neither), `calculateBillResults` derives tax as `total - subtotal`, which silently becomes `0` rather than "unknown" in that case — pre-existing behavior, more likely to surface now that totals are directly editable in Review.

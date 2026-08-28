@@ -11,7 +11,14 @@ const headers = {
   claims: [['item_id', 'user_id', 'quantity', 'mode']],
 };
 
-export type Party = { spreadsheetId: string; state: BillState };
+/**
+ * Whether this browser session created the party or joined an existing one.
+ * Client-side only, never written to the Sheet — this is a local UI hint
+ * (e.g. hiding the Upload tab for participants), not access control. Drive
+ * and Sheets sharing permissions remain the actual access control.
+ */
+export type PartyRole = 'owner' | 'participant';
+export type Party = { spreadsheetId: string; state: BillState; role: PartyRole };
 type Values = Array<Array<string | number>>;
 
 export function extractSpreadsheetId(url: string): string | null {
@@ -97,7 +104,8 @@ export async function initializeParty(token: string, spreadsheetId: string): Pro
   ]);
 }
 
-export async function loadParty(token: string, spreadsheetId: string): Promise<Party> {
+// Role isn't known here — the caller (create vs. join vs. refresh) decides it.
+export async function loadParty(token: string, spreadsheetId: string): Promise<Omit<Party, 'role'>> {
   const info = await metadata(token, spreadsheetId);
   const names = new Set(info.sheets.map((sheet) => sheet.properties.title));
   if (![SHEETS.meta, SHEETS.users, SHEETS.items, SHEETS.claims].every((name) => names.has(name))) {
@@ -138,7 +146,7 @@ async function syncRows(token: string, id: string, sheet: string, keyIndexes: nu
   await Promise.all(writes);
 }
 
-export async function syncParty(token: string, party: Party): Promise<void> {
+export async function syncParty(token: string, party: Pick<Party, 'spreadsheetId' | 'state'>): Promise<void> {
   const { spreadsheetId, state } = party;
   await syncRows(token, spreadsheetId, SHEETS.users, [0], state.participants.map((p) => [p.id, p.name]));
   await syncRows(token, spreadsheetId, SHEETS.items, [0], state.receiptItems.map((i) => [i.id, i.name, String(i.quantity), String(i.unitPrice), String(i.totalPrice)]));

@@ -69,7 +69,7 @@ function ItemClaim() {
                 <div>
                   <strong>{item.name}</strong>
                   <div>
-                    Qty: {item.quantity} · Total: ₹{item.totalPrice}
+                    Qty: {item.quantity} · Total: ₹{item.totalPrice.toFixed(2)}
                   </div>
                 </div>
                 <div className="claim-mode-toggle">
@@ -113,7 +113,7 @@ function ItemClaim() {
                             onChange={(event) => handleQuantityChange(item.id, participant.id, event.target.value)}
                           />
                         </td>
-                        <td>₹{(claim.individualQuantities[participant.id] ?? 0) * item.unitPrice}</td>
+                        <td>₹{((claim.individualQuantities[participant.id] ?? 0) * item.unitPrice).toFixed(2)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -149,7 +149,7 @@ function ItemClaim() {
                           return (
                             <tr key={participantId}>
                               <td>{participant?.name ?? participantId}</td>
-                              <td>₹{sharedSplit[participantId] ?? 0}</td>
+                              <td>₹{(sharedSplit[participantId] ?? 0).toFixed(2)}</td>
                             </tr>
                           );
                         })}

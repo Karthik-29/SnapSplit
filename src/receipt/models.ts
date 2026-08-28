@@ -48,6 +48,8 @@ export type ImagePreprocessingOptions = {
   /** Upscales small crops so OCR gets enough pixels per glyph. */
   minDimension?: number;
   grayscale?: boolean;
+  /** Corrects shadows/glare bands before the flat contrast multiplier runs. */
+  illuminationCorrection?: boolean;
   contrast?: number;
   sharpen?: boolean;
 };

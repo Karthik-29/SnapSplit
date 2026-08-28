@@ -101,7 +101,7 @@ function ReceiptReview() {
                     onChange={(event) => handleUnitPriceChange(item.id, event.target.value)}
                   />
                 </td>
-                <td>{item.totalPrice}</td>
+                <td>{item.totalPrice.toFixed(2)}</td>
                 <td>
                   <button type="button" onClick={() => removeBillItem(item.id)}>
                     Delete
@@ -113,7 +113,7 @@ function ReceiptReview() {
         </table>
 
         <div className="receipt-totals">
-          <div>Items total: ₹{reconciliation.itemSum}</div>
+          <div>Items total: ₹{reconciliation.itemSum.toFixed(2)}</div>
           <label>
             Receipt subtotal
             <input
@@ -136,9 +136,16 @@ function ReceiptReview() {
           </label>
           {reconciliation.status === 'mismatch' && (
             <p className="field-error">
-              Items total (₹{reconciliation.itemSum}) differs from the receipt {reconciliation.referenceLabel} (₹
-              {reconciliation.referenceValue}) by ₹{Math.abs(reconciliation.difference ?? 0)}. Check the items above,
+              Items total (₹{reconciliation.itemSum.toFixed(2)}) differs from the receipt {reconciliation.referenceLabel} (₹
+              {(reconciliation.referenceValue ?? 0).toFixed(2)}) by ₹{Math.abs(reconciliation.difference ?? 0).toFixed(2)}. Check the items above,
               or correct the receipt {reconciliation.referenceLabel} if OCR misread it.
+            </p>
+          )}
+          {reconciliation.totalBelowSubtotal && (
+            <p className="field-error">
+              Receipt total (₹{(state.receiptTotal ?? 0).toFixed(2)}) is less than the receipt subtotal (₹{(state.receiptSubtotal ?? 0).toFixed(2)}). A
+              payable total can never be lower than the subtotal it was built from — one of these two fields was
+              likely misread. Check both against the receipt.
             </p>
           )}
         </div>

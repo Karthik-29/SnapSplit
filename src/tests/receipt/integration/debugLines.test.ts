@@ -8,6 +8,12 @@ import { classifyLine } from '../../../receipt/parsing/sectionClassifier';
 import { parseMoney } from '../../../receipt/parsing/numberParser';
 import { toBoundingBox } from '../../../receipt/layout/normalizeTokens';
 
+const SUMMARY_SECTIONS = ['subtotal', 'tax', 'service_charge', 'discount', 'adjustment', 'total', 'payment'];
+
+function amountsOf(line: { tokens: Array<{ text: string }> }) {
+  return line.tokens.filter((token) => /\d/.test(token.text) && parseMoney(token.text) !== null);
+}
+
 const here = dirname(fileURLToPath(import.meta.url));
 const ocrDir = resolve(here, '../fixtures/ocr');
 
@@ -34,7 +40,11 @@ describe.skipIf(!enabled)('debug line reconstruction', () => {
     let seenSummary = false;
     for (const line of lines) {
       const classification = classifyLine(line, seenSummary);
-      if (['subtotal', 'tax', 'service_charge', 'discount', 'adjustment', 'total', 'payment'].includes(classification.section)) seenSummary = true;
+      if (classification.itemHeader) {
+        seenSummary = false;
+      } else if (SUMMARY_SECTIONS.includes(classification.section) && amountsOf(line).length > 0) {
+        seenSummary = true;
+      }
       const box = line.boundingBox;
       report.push(`[${classification.section.padEnd(14)} hdr=${classification.itemHeader ? 'Y' : 'n'} y=${String(Math.round(box.y)).padStart(5)} x=${String(Math.round(box.x)).padStart(5)} w=${String(Math.round(box.width)).padStart(5)}] ${line.text}`);
     }

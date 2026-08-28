@@ -12,7 +12,23 @@ async function ensureWorkerReady() {
     return;
   }
 
-  worker = await createWorker();
+  // Without an explicit langPath, tesseract.js fetches eng.traineddata from a
+  // third-party CDN (tessdata.projectnaptha.com) that has no relationship to
+  // this repo's own committed eng.traineddata -- the file the Node capture
+  // harness (nodeOcr.ts) and every accuracy score in this repo are measured
+  // against. Pointing the browser at the same model (served from public/,
+  // gzip-compressed) is what makes the measured OCR-quality numbers actually
+  // apply to what a user sees. Must be a fully-qualified URL, not a
+  // path-absolute one: tesseract.js's worker runs from a blob: URL, whose base
+  // has no origin to resolve a leading "/" against ("Failed to parse URL from
+  // /eng.traineddata.gz"), so the origin has to be resolved here on the main
+  // thread instead. cachePath is bumped so a browser that already cached the
+  // old CDN-fetched model in IndexedDB fetches the local one instead of
+  // reusing the stale entry.
+  worker = await createWorker({
+    langPath: window.location.origin,
+    cachePath: 'snapsplit-local-v1',
+  } as any);
   await worker.load();
   await worker.loadLanguage('eng');
   await worker.initialize('eng');

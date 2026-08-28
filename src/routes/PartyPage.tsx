@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { useAuthContext } from '../context/AuthContext';
 import { usePartyContext } from '../context/PartyContext';
-import { initializeParty, loadParty, syncParty } from '../google/party';
+import { initializeParty, loadParty, Party, syncParty } from '../google/party';
 import { pickGoogleSpreadsheet } from '../google/auth';
 
 export default function PartyPage() {
@@ -18,7 +18,8 @@ export default function PartyPage() {
     setBusy(true);
     try {
       if (mode === 'create') await initializeParty(token, selectedSpreadsheetId);
-      const party = await loadParty(token, selectedSpreadsheetId);
+      const loaded = await loadParty(token, selectedSpreadsheetId);
+      const party: Party = { ...loaded, role: mode === 'create' ? 'owner' : 'participant' };
       restoreState(party.state); setParty(party); navigate('/');
     } catch (cause) { console.error('Unable to open selected Google Sheet:', cause); setError(cause instanceof Error ? cause.message : 'Unable to open this Google Sheet.'); }
     finally { setBusy(false); }
@@ -27,7 +28,10 @@ export default function PartyPage() {
     if (!party) return;
     setError(null); setBusy(true);
     try {
-      const refreshed = await loadParty(await getAccessToken(), party.spreadsheetId);
+      const loaded = await loadParty(await getAccessToken(), party.spreadsheetId);
+      // Refreshing re-reads the Sheet, not how this session originally arrived
+      // at the party — the role it already has must carry over unchanged.
+      const refreshed: Party = { ...loaded, role: party.role };
       restoreState(refreshed.state); setParty(refreshed);
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Unable to refresh this party.'); }
     finally { setBusy(false); }

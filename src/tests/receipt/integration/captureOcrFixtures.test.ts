@@ -29,7 +29,7 @@ describe.skipIf(!enabled)('capture OCR fixtures', () => {
   it.each(realReceiptFixtures.map((fixture) => fixture.sourceFile))(
     'captures OCR geometry for %s',
     async (sourceFile) => {
-      const decoded = decodeImageFile(resolve(dataDir, sourceFile));
+      const decoded = await decodeImageFile(resolve(dataDir, sourceFile));
       const normalized = normalizeDecodedReceiptImage(decoded);
       const result = await nodeReceiptOCR.extract(normalized.imageData);
 

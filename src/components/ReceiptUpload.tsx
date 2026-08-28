@@ -39,8 +39,10 @@ function ReceiptUpload() {
       setParsedItemCount(parsedReceipt.items.length);
       applyParsedItems(parsedReceipt.items, { subtotal: parsedReceipt.subtotal, total: parsedReceipt.total });
     } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('Receipt parsing failed:', err);
       setParsedItemCount(0);
-      setError('Failed to parse receipt.');
+      setError(`Failed to parse receipt: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setLoading(false);
     }

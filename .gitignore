@@ -43,3 +43,5 @@ ocr-quality-report.txt
 ocr-sweep.txt
 real-token-parse.txt
 debug-lines.txt
+illumination-sweep.txt
+illumination-variance.txt

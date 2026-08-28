@@ -8,11 +8,11 @@
     "width": 702,
     "height": 1170
   },
-  "text": "ala\nElcha lanrestaurantégrat.con        A\nYour Server .an;;‘ag\n3/12/2016 1:13:51 P            /\nSequence #: 0000068\n10 #: 0389450\nITEM                       QTY PRICE\nCAUSA DEPOLLO - . 1 $8.95\nCEVICHE DE CAMARONES           1 $16.95     :\nLIMONADA                     1 $4.00\nPESCADD AL AJILLO             1 $15.95\nSubtotal             $45.8%\nTotal Taxes           $3.67\nGrand Total          $49.52\nAnount Due:         WA g\n15%            20%           25%\n$7.43         $9.90         $12.38\nTIP IS NOT INCLUDED    PROPINA NO INCLUIDA\nTHANK YOU - GRACIAS!!!\nGuest Check         SO\n",
+  "text": "ala\n£10ha lanrestaurantgeat.con           2\nY‘Zu‘j:,é\"::' &iJ;;‘ii\n3/12/2016 1:13:51 PM               /\nSequence #: 0000068           '\n10 #: 0389450\nITEM                            QTY PRICE\nCAUSA DE POLLD\"“\"\"“““”  ‘5895\nCEVICHE DE CAMARONES           1 $16.95      a\nLIMONADA                     1 $4.00\nPESCADD AL AJILLO             1 $15.9%\nSubtotal             $45.8%\nTotal Taxes           $3.67\nGrand Total          $49.52\nAmount Die:         W Y\n15%            20%           25%\n$7.43         $9.90         $12.38\nTIP IS NOT INCLUDED    PROPINA NO INCLUIDA\nTHANK YOU - GRACIAS!!!\nGuest Check           1,\n",
   "tokens": [
     {
       "text": "ala",
-      "confidence": 84.35771179199219,
+      "confidence": 84.97223663330078,
       "boundingBox": {
         "x": 1011,
         "y": 80,
@@ -21,28 +21,28 @@
       }
     },
     {
-      "text": "Elcha",
-      "confidence": 15.982269287109375,
+      "text": "£10ha",
+      "confidence": 6.231452941894531,
       "boundingBox": {
         "x": 207,
         "y": 527,
-        "width": 95,
+        "width": 92,
         "height": 53
       }
     },
     {
-      "text": "lanrestaurantégrat.con",
-      "confidence": 3.496337890625,
+      "text": "lanrestaurantgeat.con",
+      "confidence": 0,
       "boundingBox": {
-        "x": 311,
+        "x": 315,
         "y": 509,
-        "width": 449,
-        "height": 89
+        "width": 445,
+        "height": 85
       }
     },
     {
-      "text": "A",
-      "confidence": 49.249656677246094,
+      "text": "2",
+      "confidence": 80.74762725830078,
       "boundingBox": {
         "x": 1091,
         "y": 525,
@@ -51,28 +51,18 @@
       }
     },
     {
-      "text": "Your",
-      "confidence": 44.03374481201172,
+      "text": "Y‘Zu‘j:,é\"::'",
+      "confidence": 26.7730712890625,
       "boundingBox": {
         "x": 276,
         "y": 599,
-        "width": 69,
+        "width": 212,
         "height": 50
       }
     },
     {
-      "text": "Server",
-      "confidence": 91.27493286132812,
-      "boundingBox": {
-        "x": 371,
-        "y": 599,
-        "width": 117,
-        "height": 50
-      }
-    },
-    {
-      "text": ".an;;‘ag",
-      "confidence": 34.46044921875,
+      "text": "&iJ;;‘ii",
+      "confidence": 41.99104309082031,
       "boundingBox": {
         "x": 529,
         "y": 595,
@@ -82,7 +72,7 @@
     },
     {
       "text": "3/12/2016",
-      "confidence": 91.13153839111328,
+      "confidence": 91.69915771484375,
       "boundingBox": {
         "x": 293,
         "y": 665,
@@ -92,7 +82,7 @@
     },
     {
       "text": "1:13:51",
-      "confidence": 81.107177734375,
+      "confidence": 77.66136932373047,
       "boundingBox": {
         "x": 504,
         "y": 663,
@@ -101,8 +91,8 @@
       }
     },
     {
-      "text": "P",
-      "confidence": 4.96417236328125,
+      "text": "PM",
+      "confidence": 61.6612663269043,
       "boundingBox": {
         "x": 663,
         "y": 663,
@@ -112,17 +102,17 @@
     },
     {
       "text": "/",
-      "confidence": 91.27042388916016,
+      "confidence": 82.85360717773438,
       "boundingBox": {
-        "x": 1001,
+        "x": 1007,
         "y": 651,
-        "width": 20,
-        "height": 45
+        "width": 14,
+        "height": 35
       }
     },
     {
       "text": "Sequence",
-      "confidence": 91.26915740966797,
+      "confidence": 91.41809844970703,
       "boundingBox": {
         "x": 295,
         "y": 711,
@@ -132,7 +122,7 @@
     },
     {
       "text": "#:",
-      "confidence": 91.26915740966797,
+      "confidence": 91.85283660888672,
       "boundingBox": {
         "x": 483,
         "y": 717,
@@ -142,7 +132,7 @@
     },
     {
       "text": "0000068",
-      "confidence": 95.67972564697266,
+      "confidence": 94.63489532470703,
       "boundingBox": {
         "x": 549,
         "y": 709,
@@ -151,8 +141,18 @@
       }
     },
     {
+      "text": "'",
+      "confidence": 52.86729431152344,
+      "boundingBox": {
+        "x": 1001,
+        "y": 690,
+        "width": 4,
+        "height": 6
+      }
+    },
+    {
       "text": "10",
-      "confidence": 92.3065414428711,
+      "confidence": 87.55294036865234,
       "boundingBox": {
         "x": 364,
         "y": 756,
@@ -162,7 +162,7 @@
     },
     {
       "text": "#:",
-      "confidence": 87.62837219238281,
+      "confidence": 87.65980529785156,
       "boundingBox": {
         "x": 424,
         "y": 759,
@@ -172,7 +172,7 @@
     },
     {
       "text": "0389450",
-      "confidence": 59.83008575439453,
+      "confidence": 75.66442108154297,
       "boundingBox": {
         "x": 486,
         "y": 755,
@@ -182,7 +182,7 @@
     },
     {
       "text": "ITEM",
-      "confidence": 76.63158416748047,
+      "confidence": 62.46097946166992,
       "boundingBox": {
         "x": 65,
         "y": 802,
@@ -192,7 +192,7 @@
     },
     {
       "text": "QTY",
-      "confidence": 79.5095443725586,
+      "confidence": 81.15802764892578,
       "boundingBox": {
         "x": 739,
         "y": 798,
@@ -202,7 +202,7 @@
     },
     {
       "text": "PRICE",
-      "confidence": 89.91431427001953,
+      "confidence": 81.15802764892578,
       "boundingBox": {
         "x": 837,
         "y": 795,
@@ -212,7 +212,7 @@
     },
     {
       "text": "CAUSA",
-      "confidence": 0,
+      "confidence": 92.23767852783203,
       "boundingBox": {
         "x": 64,
         "y": 896,
@@ -221,58 +221,38 @@
       }
     },
     {
-      "text": "DEPOLLO",
-      "confidence": 61.281097412109375,
+      "text": "DE",
+      "confidence": 92.23767852783203,
       "boundingBox": {
         "x": 196,
         "y": 895,
-        "width": 170,
+        "width": 40,
         "height": 33
       }
     },
     {
-      "text": "-",
-      "confidence": 15.245223999023438,
+      "text": "POLLD\"“\"\"“““”",
+      "confidence": 28.879547119140625,
       "boundingBox": {
-        "x": 433,
+        "x": 261,
         "y": 863,
-        "width": 32,
-        "height": 3
-      }
-    },
-    {
-      "text": ".",
-      "confidence": 43.99402618408203,
-      "boundingBox": {
-        "x": 475,
-        "y": 863,
-        "width": 216,
-        "height": 3
-      }
-    },
-    {
-      "text": "1",
-      "confidence": 74.64646911621094,
-      "boundingBox": {
-        "x": 753,
-        "y": 861,
-        "width": 41,
-        "height": 60
-      }
-    },
-    {
-      "text": "$8.95",
-      "confidence": 66.8855972290039,
-      "boundingBox": {
-        "x": 808,
-        "y": 858,
-        "width": 140,
+        "width": 430,
         "height": 65
       }
     },
     {
+      "text": "‘5895",
+      "confidence": 34.96179962158203,
+      "boundingBox": {
+        "x": 771,
+        "y": 889,
+        "width": 177,
+        "height": 34
+      }
+    },
+    {
       "text": "CEVICHE",
-      "confidence": 93.02552795410156,
+      "confidence": 91.17295837402344,
       "boundingBox": {
         "x": 65,
         "y": 943,
@@ -282,7 +262,7 @@
     },
     {
       "text": "DE",
-      "confidence": 91.05308532714844,
+      "confidence": 92.396728515625,
       "boundingBox": {
         "x": 241,
         "y": 943,
@@ -292,7 +272,7 @@
     },
     {
       "text": "CAMARONES",
-      "confidence": 90.56463623046875,
+      "confidence": 90.77279663085938,
       "boundingBox": {
         "x": 306,
         "y": 941,
@@ -302,17 +282,17 @@
     },
     {
       "text": "1",
-      "confidence": 73.33192443847656,
+      "confidence": 82.69806671142578,
       "boundingBox": {
         "x": 776,
         "y": 940,
         "width": 9,
-        "height": 29
+        "height": 28
       }
     },
     {
       "text": "$16.95",
-      "confidence": 72.76565551757812,
+      "confidence": 85.88892364501953,
       "boundingBox": {
         "x": 834,
         "y": 936,
@@ -321,8 +301,8 @@
       }
     },
     {
-      "text": ":",
-      "confidence": 0,
+      "text": "a",
+      "confidence": 75.55179595947266,
       "boundingBox": {
         "x": 1093,
         "y": 947,
@@ -332,7 +312,7 @@
     },
     {
       "text": "LIMONADA",
-      "confidence": 89.67383575439453,
+      "confidence": 90.68670654296875,
       "boundingBox": {
         "x": 69,
         "y": 991,
@@ -342,7 +322,7 @@
     },
     {
       "text": "1",
-      "confidence": 69.48710632324219,
+      "confidence": 67.96891784667969,
       "boundingBox": {
         "x": 782,
         "y": 987,
@@ -352,7 +332,7 @@
     },
     {
       "text": "$4.00",
-      "confidence": 71.03419494628906,
+      "confidence": 67.96891784667969,
       "boundingBox": {
         "x": 860,
         "y": 983,
@@ -362,7 +342,7 @@
     },
     {
       "text": "PESCADD",
-      "confidence": 89.73087310791016,
+      "confidence": 85.36874389648438,
       "boundingBox": {
         "x": 68,
         "y": 1040,
@@ -372,7 +352,7 @@
     },
     {
       "text": "AL",
-      "confidence": 93.2556381225586,
+      "confidence": 92.64578247070312,
       "boundingBox": {
         "x": 246,
         "y": 1040,
@@ -382,7 +362,7 @@
     },
     {
       "text": "AJILLO",
-      "confidence": 92.23387145996094,
+      "confidence": 91.91395568847656,
       "boundingBox": {
         "x": 313,
         "y": 1038,
@@ -392,7 +372,7 @@
     },
     {
       "text": "1",
-      "confidence": 55.68988037109375,
+      "confidence": 81.75364685058594,
       "boundingBox": {
         "x": 786,
         "y": 1034,
@@ -401,8 +381,8 @@
       }
     },
     {
-      "text": "$15.95",
-      "confidence": 55.68988037109375,
+      "text": "$15.9%",
+      "confidence": 25.53582000732422,
       "boundingBox": {
         "x": 846,
         "y": 1031,
@@ -412,7 +392,7 @@
     },
     {
       "text": "Subtotal",
-      "confidence": 91.46696472167969,
+      "confidence": 91.01647186279297,
       "boundingBox": {
         "x": 406,
         "y": 1131,
@@ -422,7 +402,7 @@
     },
     {
       "text": "$45.8%",
-      "confidence": 74.30362701416016,
+      "confidence": 58.696495056152344,
       "boundingBox": {
         "x": 859,
         "y": 1128,
@@ -432,7 +412,7 @@
     },
     {
       "text": "Total",
-      "confidence": 88.1146469116211,
+      "confidence": 92.34931945800781,
       "boundingBox": {
         "x": 410,
         "y": 1183,
@@ -442,7 +422,7 @@
     },
     {
       "text": "Taxes",
-      "confidence": 89.533935546875,
+      "confidence": 92.80128479003906,
       "boundingBox": {
         "x": 542,
         "y": 1183,
@@ -452,7 +432,7 @@
     },
     {
       "text": "$3.67",
-      "confidence": 85.91667938232422,
+      "confidence": 89.50244903564453,
       "boundingBox": {
         "x": 886,
         "y": 1177,
@@ -462,7 +442,7 @@
     },
     {
       "text": "Grand",
-      "confidence": 91.7967300415039,
+      "confidence": 91.45773315429688,
       "boundingBox": {
         "x": 417,
         "y": 1287,
@@ -472,7 +452,7 @@
     },
     {
       "text": "Total",
-      "confidence": 91.089599609375,
+      "confidence": 92.3134536743164,
       "boundingBox": {
         "x": 551,
         "y": 1284,
@@ -482,7 +462,7 @@
     },
     {
       "text": "$49.52",
-      "confidence": 88.46604919433594,
+      "confidence": 89.07609558105469,
       "boundingBox": {
         "x": 878,
         "y": 1278,
@@ -491,8 +471,8 @@
       }
     },
     {
-      "text": "Anount",
-      "confidence": 28.268508911132812,
+      "text": "Amount",
+      "confidence": 28.254653930664062,
       "boundingBox": {
         "x": 424,
         "y": 1343,
@@ -501,8 +481,8 @@
       }
     },
     {
-      "text": "Due:",
-      "confidence": 45.99925231933594,
+      "text": "Die:",
+      "confidence": 0.0542144775390625,
       "boundingBox": {
         "x": 578,
         "y": 1342,
@@ -511,18 +491,18 @@
       }
     },
     {
-      "text": "WA",
-      "confidence": 22.941619873046875,
+      "text": "W",
+      "confidence": 19.246139526367188,
       "boundingBox": {
         "x": 886,
-        "y": 1331,
-        "width": 126,
-        "height": 81
+        "y": 1333,
+        "width": 64,
+        "height": 79
       }
     },
     {
-      "text": "g",
-      "confidence": 17.352935791015625,
+      "text": "Y",
+      "confidence": 26.04186248779297,
       "boundingBox": {
         "x": 1087,
         "y": 1363,
@@ -532,7 +512,7 @@
     },
     {
       "text": "15%",
-      "confidence": 91.17931365966797,
+      "confidence": 91.2425765991211,
       "boundingBox": {
         "x": 199,
         "y": 1436,
@@ -542,7 +522,7 @@
     },
     {
       "text": "20%",
-      "confidence": 91.85598754882812,
+      "confidence": 92.06095123291016,
       "boundingBox": {
         "x": 518,
         "y": 1427,
@@ -552,7 +532,7 @@
     },
     {
       "text": "25%",
-      "confidence": 52.403907775878906,
+      "confidence": 73.52595520019531,
       "boundingBox": {
         "x": 829,
         "y": 1417,
@@ -562,7 +542,7 @@
     },
     {
       "text": "$7.43",
-      "confidence": 92.43083190917969,
+      "confidence": 92.31002044677734,
       "boundingBox": {
         "x": 173,
         "y": 1491,
@@ -572,7 +552,7 @@
     },
     {
       "text": "$9.90",
-      "confidence": 92.13664245605469,
+      "confidence": 92.53456115722656,
       "boundingBox": {
         "x": 499,
         "y": 1481,
@@ -582,7 +562,7 @@
     },
     {
       "text": "$12.38",
-      "confidence": 88.92514038085938,
+      "confidence": 89.96704864501953,
       "boundingBox": {
         "x": 813,
         "y": 1471,
@@ -592,7 +572,7 @@
     },
     {
       "text": "TIP",
-      "confidence": 91.49436950683594,
+      "confidence": 91.43925476074219,
       "boundingBox": {
         "x": 81,
         "y": 1612,
@@ -602,7 +582,7 @@
     },
     {
       "text": "IS",
-      "confidence": 93.25608825683594,
+      "confidence": 93.25321960449219,
       "boundingBox": {
         "x": 178,
         "y": 1610,
@@ -612,7 +592,7 @@
     },
     {
       "text": "NOT",
-      "confidence": 92.0350341796875,
+      "confidence": 91.66004943847656,
       "boundingBox": {
         "x": 250,
         "y": 1607,
@@ -622,7 +602,7 @@
     },
     {
       "text": "INCLUDED",
-      "confidence": 90.49156188964844,
+      "confidence": 90.8750991821289,
       "boundingBox": {
         "x": 345,
         "y": 1600,
@@ -632,7 +612,7 @@
     },
     {
       "text": "PROPINA",
-      "confidence": 89.77400970458984,
+      "confidence": 91.0872802734375,
       "boundingBox": {
         "x": 620,
         "y": 1591,
@@ -642,17 +622,17 @@
     },
     {
       "text": "NO",
-      "confidence": 90.1785659790039,
+      "confidence": 90.32789611816406,
       "boundingBox": {
         "x": 801,
-        "y": 1587,
+        "y": 1588,
         "width": 41,
-        "height": 40
+        "height": 39
       }
     },
     {
       "text": "INCLUIDA",
-      "confidence": 90.1785659790039,
+      "confidence": 90.32789611816406,
       "boundingBox": {
         "x": 869,
         "y": 1579,
@@ -662,7 +642,7 @@
     },
     {
       "text": "THANK",
-      "confidence": 91.3265380859375,
+      "confidence": 90.62763977050781,
       "boundingBox": {
         "x": 322,
         "y": 1662,
@@ -672,7 +652,7 @@
     },
     {
       "text": "YOU",
-      "confidence": 92.69064331054688,
+      "confidence": 92.59519958496094,
       "boundingBox": {
         "x": 462,
         "y": 1659,
@@ -682,7 +662,7 @@
     },
     {
       "text": "-",
-      "confidence": 93.107421875,
+      "confidence": 93.16400146484375,
       "boundingBox": {
         "x": 558,
         "y": 1675,
@@ -692,7 +672,7 @@
     },
     {
       "text": "GRACIAS!!!",
-      "confidence": 85.36197662353516,
+      "confidence": 80.34315490722656,
       "boundingBox": {
         "x": 600,
         "y": 1646,
@@ -702,7 +682,7 @@
     },
     {
       "text": "Guest",
-      "confidence": 92.97705078125,
+      "confidence": 91.59150695800781,
       "boundingBox": {
         "x": 441,
         "y": 1716,
@@ -712,7 +692,7 @@
     },
     {
       "text": "Check",
-      "confidence": 92.55657196044922,
+      "confidence": 92.53597259521484,
       "boundingBox": {
         "x": 580,
         "y": 1709,
@@ -721,13 +701,13 @@
       }
     },
     {
-      "text": "SO",
-      "confidence": 0,
+      "text": "1,",
+      "confidence": 32.48240661621094,
       "boundingBox": {
-        "x": 944,
+        "x": 1007,
         "y": 1762,
-        "width": 102,
-        "height": 10
+        "width": 39,
+        "height": 7
       }
     }
   ]

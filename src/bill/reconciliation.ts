@@ -6,6 +6,14 @@ export type ItemReconciliation = {
   referenceValue: number | null;
   difference: number | null;
   status: 'match' | 'mismatch' | 'insufficient_data';
+  /**
+   * True when both subtotal and total are known and total is less than
+   * subtotal. A payable total can never be less than the pre-tax subtotal it
+   * was built from, so this fires independently of the items-vs-subtotal
+   * match/mismatch above — one of the two receipt values was misread,
+   * regardless of what the item list says.
+   */
+  totalBelowSubtotal: boolean;
 };
 
 // ₹0.01 — BillItem values here are already major units, unlike the OCR
@@ -30,9 +38,10 @@ export function checkItemsAgainstReceiptTotal(
   const itemSum = Number(items.reduce((sum, item) => sum + item.totalPrice, 0).toFixed(2));
   const referenceLabel = subtotal !== undefined ? 'subtotal' : total !== undefined ? 'total' : null;
   const referenceValue = subtotal ?? total ?? null;
+  const totalBelowSubtotal = subtotal !== undefined && total !== undefined && total < subtotal - TOLERANCE;
 
   if (referenceValue === null) {
-    return { itemSum, referenceLabel, referenceValue, difference: null, status: 'insufficient_data' };
+    return { itemSum, referenceLabel, referenceValue, difference: null, status: 'insufficient_data', totalBelowSubtotal };
   }
 
   const difference = Number((itemSum - referenceValue).toFixed(2));
@@ -42,5 +51,6 @@ export function checkItemsAgainstReceiptTotal(
     referenceValue,
     difference,
     status: Math.abs(difference) <= TOLERANCE ? 'match' : 'mismatch',
+    totalBelowSubtotal,
   };
 }

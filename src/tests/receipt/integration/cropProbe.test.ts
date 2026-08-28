@@ -20,7 +20,7 @@ describe.skipIf(!enabled)('manual crop probe', () => {
   });
 
   it('OCRs a hand-specified receipt region', async () => {
-    const decoded = decodeImageFile(resolve(dataDir, 'test_bill-1.jpeg'));
+    const decoded = await decodeImageFile(resolve(dataDir, 'test_bill-1.jpeg'));
     // Hand-measured receipt bounds, as a stand-in for working region detection.
     const bounds = { x: 40, y: 325, width: 485, height: 570 };
     const cropped = cropImageData(decoded, bounds);

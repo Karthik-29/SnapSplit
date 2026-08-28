@@ -48,6 +48,36 @@ function isAmountEntry(entry: { token: OCRToken; text: string; parsed: ReturnTyp
  * caller reading `parsed.value` where it means "quantity" would silently
  * multiply every quantity by 100.
  */
+// A genuine rate annotation ("@2.5%") never carries a currency symbol. A token
+// that does (e.g. "$45.8%" — a receipt's own "$45.85" with its final digit
+// misread as "%") is a corrupted amount, not a rate, and discarding it
+// outright throws away a real subtotal/total for no reason. Once such a token
+// reaches parseMoney, its existing character-stripping removes the stray "%"
+// and its existing `corrected` flag already reports that a correction
+// happened — nothing else needs to change downstream.
+function isRateAnnotation(text: string): boolean {
+  return /^@?\d+(?:\.\d+)?%$/.test(text) && !/[₹$€£]/.test(text);
+}
+
+// A genuine amount token, once a leading currency indicator is stripped, is
+// nothing but digit-like characters and separators. A token merely
+// *containing* a digit is not enough: OCR garbling an item name can leave a
+// digit fragment inside it (e.g. "BLACK" misread as "34K"), and treating that
+// as a candidate amount corrupts the positional quantity/rate/total
+// assignment for the whole row. Requiring the token to be predominantly
+// numeric — not just digit-containing — rejects "34K" while still accepting
+// "$8.95", "Rs 178.00", and OCR's own O/o/I/l-for-0/1 substitutions (resolved
+// later, in parseMoney).
+const CURRENCY_PREFIX = /^(?:Rs\.?|INR|USD|EUR|GBP|[₹$€£])\s*/i;
+function isAmountLikeToken(text: string): boolean {
+  const withoutCurrency = text.replace(CURRENCY_PREFIX, '').trim();
+  // A trailing "%" is allowed structurally: `isRateAnnotation` (checked
+  // separately by callers) is what actually distinguishes a genuine rate
+  // annotation from a currency-prefixed amount with a corrupted trailing
+  // digit (e.g. "$45.8%" — a "$45.85" whose final "5" OCR misread as "%").
+  return /^-?[0-9OoIl]+(?:[.,'][0-9OoIl]+)*%?$/.test(withoutCurrency);
+}
+
 function amountsOf(line: OCRLine): AmountEntry[] {
   if (line.tokens.length > 1) {
     const merged: Array<{ token: OCRToken; text: string }> = [];
@@ -62,16 +92,28 @@ function amountsOf(line: OCRLine): AmountEntry[] {
       merged.push({ token, text: token.text });
     }
     return merged
-      // Digit-free tokens are never amounts. Without this, the parser's own
-      // O→0 / I→1 OCR correction turns ordinary words ("of", "incl") into
-      // monetary values and invents tax components out of prose.
-      .filter((entry) => /\d/.test(entry.text) && !/[%@]/.test(entry.text))
+      .filter((entry) => isAmountLikeToken(entry.text) && !isRateAnnotation(entry.text))
       .map((entry) => ({ token: entry.token, text: entry.text, parsed: parseMoney(entry.text) }))
       .filter(isAmountEntry);
   }
 
   return [...line.text.matchAll(/(?:Rs\.?|INR|USD|EUR|GBP|[$])?\s*-?[0-9OoIl]+(?:[,.']\s*[0-9OoIl]+)?/gi)]
-    .filter((match) => /\d/.test(match[0]))
+    .filter((match) => {
+      if (!/\d/.test(match[0])) return false;
+      // Reject a numeric-looking run embedded inside a longer word (the "34"
+      // in a garbled "34K") — the same corruption the token-level check
+      // above guards against, for the geometry-less text-only path. The
+      // pattern's own leading `\s*` can pull whitespace into match[0] (a
+      // match right after a word boundary, e.g. "Salted 1", captures " 1"),
+      // so the boundary must be checked at the trimmed content, not the raw
+      // match span, or a genuine amount right after a name gets rejected.
+      const leading = match[0].length - match[0].trimStart().length;
+      const trimmedLength = match[0].trim().length;
+      const start = (match.index ?? 0) + leading;
+      const before = line.text[start - 1];
+      const after = line.text[start + trimmedLength];
+      return !(before && /[A-Za-z]/.test(before)) && !(after && /[A-Za-z]/.test(after));
+    })
     .map((match) => ({ token: line.tokens[0], text: match[0], parsed: parseMoney(match[0]) }))
     .filter(isAmountEntry);
 }
@@ -149,6 +191,16 @@ function resolveQuantityAndRate(values: AmountEntry[], totalEntry: AmountEntry):
  * rate, and total as three separate bare-numeric lines, and the caller groups
  * a run of them together before calling this, so all of it feeds one item.
  */
+// No real receipt in this codebase's own ground truth (realReceiptFixtures.ts)
+// prints a single line-item quantity above 4. A garbled non-item line (a
+// summary/footer row OCR can't classify) occasionally contains three numbers
+// that are internally consistent (qty * rate == total) purely by coincidence,
+// which is exactly the evidence resolveQuantityAndRate uses to trust a row —
+// so an implausible quantity is treated as proof the whole row is not a
+// genuine item, not just an unreliable quantity to null out (nulling only the
+// quantity would still leave the row's inflated total in the bill).
+const MAX_PLAUSIBLE_ITEM_QUANTITY = 50;
+
 function parseItem(anchorLines: OCRLine[], pendingLines: OCRLine[], index: number): ParsedBillItem | null {
   const allText = [...pendingLines.map((entry) => entry.text), ...anchorLines.map((entry) => entry.text)].join(' ').replace(/\s+/g, ' ').trim();
   if (!hasNameLikeWord(allText) || isMetadataLine(allText)) return null;
@@ -158,6 +210,7 @@ function parseItem(anchorLines: OCRLine[], pendingLines: OCRLine[], index: numbe
   if (totalEntry.parsed.value <= 0) return null;
 
   const { quantity, unitPrice, source } = resolveQuantityAndRate(values, totalEntry);
+  if (quantity !== null && quantity > MAX_PLAUSIBLE_ITEM_QUANTITY) return null;
   let name = allText.replace(/(?:[₹$€£]\s*)?\d+(?:[.,]\d+)?/g, ' ').replace(/\s+/g, ' ').trim();
   // A quantity/price row without token geometry has the numeric columns at the end.
   name = name

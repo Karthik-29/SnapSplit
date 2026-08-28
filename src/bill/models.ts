@@ -33,6 +33,14 @@ export type BillCalculationResult = {
   tax?: number;
   participantSummaries: ParticipantSummary[];
   settlements: SettlementLine[];
+  /**
+   * Items whose claimed quantity exceeded the item's own quantity at
+   * calculation time. Shares for these items are still capped to the item's
+   * real quantity (so participant shares always sum to the bill total), but
+   * the stored claim itself is never silently rewritten — this list is how
+   * the UI tells the user to go fix the claim at the source.
+   */
+  itemsNeedingReview: Array<{ id: string; name: string }>;
 };
 
 export type BillState = {

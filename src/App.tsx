@@ -19,7 +19,7 @@ function App() {
         <div>
           <h1>SnapSplit</h1>
           <nav>
-            {party && <Link to="/">Upload</Link>}
+            {party?.role === 'owner' && <Link to="/">Upload</Link>}
             {party && <><Link to="/review">Review</Link>
             <Link to="/participants">Participants</Link>
             <Link to="/claim">Claim</Link>
@@ -31,7 +31,11 @@ function App() {
       </header>
       <main>
         <Routes>
-          <Route path="/" element={party ? <ReceiptUploadPage /> : <PartyPage />} />
+          {/* A participant who joined has nothing to upload — the owner's
+              receipt already exists. Landing them on Upload risks an
+              accidental re-upload that overwrites the shared bill via
+              PartySync, so they land on Review (see the bill) instead. */}
+          <Route path="/" element={!party ? <PartyPage /> : party.role === 'owner' ? <ReceiptUploadPage /> : <ReceiptReviewPage />} />
           <Route path="/review" element={<ReceiptReviewPage />} />
           <Route path="/claim" element={<ItemClaimPage />} />
           <Route path="/participants" element={<ParticipantsPage />} />

@@ -32,7 +32,7 @@ describe.skipIf(!enabled)('OCR preprocessing sweep', () => {
         let aggregate = 0;
         const lines: string[] = [];
         for (const fixture of realReceiptFixtures) {
-          const decoded = decodeImageFile(resolve(dataDir, fixture.sourceFile));
+          const decoded = await decodeImageFile(resolve(dataDir, fixture.sourceFile));
           const normalized = normalizeDecodedReceiptImage(decoded, { minDimension, contrast });
           const result = await nodeReceiptOCR.extract(normalized.imageData);
           const score = scoreOcrText(fixture, result.text);

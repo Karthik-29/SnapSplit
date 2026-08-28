@@ -27,6 +27,15 @@ function Settlement() {
           )}
         </div>
 
+        {calculationResult.itemsNeedingReview.length > 0 && (
+          <p className="field-error" role="alert">
+            {calculationResult.itemsNeedingReview.length === 1 ? 'This item has' : 'These items have'} more claimed
+            quantity than is actually available: {calculationResult.itemsNeedingReview.map((item) => item.name).join(', ')}.
+            Shares below are capped to what's actually available so they still add up correctly, but the claim itself
+            hasn't changed — go back to Item Claims to fix it properly.
+          </p>
+        )}
+
         <h3>Participant shares</h3>
         <table className="receipt-table">
           <thead>
