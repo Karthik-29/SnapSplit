@@ -1,83 +1,266 @@
-body {
-  margin: 0;
-  font-family: system-ui, sans-serif;
-  background: #f8fafc;
-  color: #111827;
+/* ------------------------------------------------------------------ *
+ * SnapSplit — minimalist theme
+ * Warm neutral surfaces, one teal accent. Light + dark via
+ * prefers-color-scheme. All colour lives in the token block below;
+ * components reference tokens only.
+ * ------------------------------------------------------------------ */
+
+:root {
+  --bg: #fafaf8;
+  --surface: #ffffff;
+  --surface-2: #f4f3ef;
+  --text: #1a1a17;
+  --text-muted: #6b6b63;
+  --border: #e7e5e0;
+  --accent: #0f766e;
+  --accent-hover: #0b5d56;
+  --accent-contrast: #ffffff;
+  --danger: #b4231f;
+  --danger-bg: #fbedec;
+
+  --shadow-sm: 0 1px 2px rgba(20, 20, 15, 0.04);
+  --shadow-md: 0 6px 24px rgba(20, 20, 15, 0.06);
+
+  --radius-sm: 8px;
+  --radius: 10px;
+  --radius-lg: 16px;
+  --maxw: 960px;
+
+  --font: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
 
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #131311;
+    --surface: #1c1b18;
+    --surface-2: #232220;
+    --text: #eceae3;
+    --text-muted: #a3a097;
+    --border: #322f2a;
+    --accent: #2dd4bf;
+    --accent-hover: #5eead4;
+    --accent-contrast: #0a0a08;
+    --danger: #f87171;
+    --danger-bg: #2a1917;
+
+    --shadow-sm: none;
+    --shadow-md: 0 6px 24px rgba(0, 0, 0, 0.4);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0 0 0.4em;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+h2 {
+  font-size: 1.35rem;
+}
+
+h3 {
+  font-size: 1.05rem;
+}
+
+a {
+  color: var(--accent);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-radius: 4px;
+}
+
+/* ----- Layout ----------------------------------------------------- */
+
 .app-shell {
-  max-width: 960px;
+  max-width: var(--maxw);
   margin: 0 auto;
-  padding: 24px;
+  padding: clamp(16px, 4vw, 32px);
 }
 
 .app-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  margin-bottom: 28px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
 }
 
-nav a {
-  margin-right: 12px;
-  text-decoration: none;
-  color: #1f2937;
-}
-
-nav a:hover {
-  color: #2563eb;
-}
-
-.auth-controls {
+.app-header > div {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 20px;
+  flex-wrap: wrap;
 }
 
-.auth-controls button {
-  min-width: 150px;
+/* ----- Brand ---------------------------------------------------- */
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  text-decoration: none;
+  color: var(--text);
 }
+
+.brand svg {
+  color: var(--accent);
+  flex: none;
+}
+
+.wordmark {
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.wordmark span {
+  color: var(--accent);
+}
+
+/* ----- Nav ------------------------------------------------------ */
+
+nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+nav a,
+.nav-link {
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+}
+
+nav a:hover,
+.nav-link:hover {
+  color: var(--text);
+  background: var(--surface-2);
+}
+
+.nav-link.active {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* ----- Surfaces ----------------------------------------------- */
 
 section {
-  background: #ffffff;
-  border-radius: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
   padding: 24px;
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+  box-shadow: var(--shadow-sm);
 }
 
-input[type='text'],
-input[type='number'] {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid #d1d5db;
-  border-radius: 10px;
-  background: #f8fafc;
+section + section {
+  margin-top: 20px;
 }
+
+section > p:first-of-type {
+  color: var(--text-muted);
+  margin-top: 0;
+}
+
+.card {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-top: 16px;
+  overflow-x: auto;
+}
+
+/* ----- Forms -------------------------------------------------- */
+
+input[type='text'],
+input[type='number'],
+select {
+  width: 100%;
+  padding: 9px 11px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font-family: inherit;
+  /* Keep >=16px so iOS Safari does not zoom the viewport on focus. */
+  font-size: 16px;
+}
+
+input::placeholder {
+  color: var(--text-muted);
+}
+
+.receipt-table input[type='number'] {
+  max-width: 88px;
+}
+
+/* ----- Buttons --------------------------------------------------- */
 
 button,
 .button {
-  background: #2563eb;
-  border: none;
-  color: white;
-  padding: 10px 16px;
-  border-radius: 10px;
+  display: inline-block;
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  color: var(--accent-contrast);
+  padding: 9px 16px;
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: none;
   cursor: pointer;
 }
 
-.button-secondary {
-  background: #6b7280;
-}
-
 button:hover,
-.button:hover,
-.button-secondary:hover {
-  background: #1d4ed8;
+.button:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
 }
 
-section + .section-actions {
-  margin-top: 24px;
+button:disabled,
+.button[aria-disabled='true'] {
+  opacity: 0.5;
+  pointer-events: none;
 }
+
+.button-secondary,
+button.button-secondary {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--text);
+}
+
+.button-secondary:hover,
+button.button-secondary:hover {
+  background: var(--surface-2);
+  border-color: var(--border);
+}
+
+/* ----- Tables -------------------------------------------------- */
 
 .receipt-table {
   width: 100%;
@@ -85,18 +268,36 @@ section + .section-actions {
   margin-top: 16px;
 }
 
-.receipt-table th,
+.receipt-table th {
+  padding: 10px;
+  text-align: left;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
 .receipt-table td {
-  padding: 12px 10px;
-  border-bottom: 1px solid #e5e7eb;
+  padding: 10px;
+  border-bottom: 1px solid var(--border);
   text-align: left;
 }
+
+.receipt-table tbody tr:hover {
+  background: var(--surface-2);
+}
+
+/* ----- Receipt / review ------------------------------------------ */
 
 .receipt-summary,
 .summary-grid {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
   margin-top: 16px;
 }
 
@@ -104,7 +305,7 @@ section + .section-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 16px;
-  align-items: center;
+  align-items: flex-end;
   margin-top: 16px;
 }
 
@@ -112,12 +313,88 @@ section + .section-actions {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  font-size: 0.85em;
+  font-size: 0.85rem;
+  color: var(--text-muted);
 }
 
 .receipt-totals .field-error {
   flex-basis: 100%;
 }
+
+.receipt-preview img {
+  max-width: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  margin-top: 16px;
+}
+
+/* ----- Item claim --------------------------------------------- */
+
+.item-claim-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  background: var(--surface);
+}
+
+.item-claim-card + .item-claim-card {
+  margin-top: 12px;
+}
+
+.item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.item-header > div:first-child > div {
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  margin-top: 2px;
+}
+
+.claim-mode-toggle {
+  display: flex;
+  gap: 14px;
+  font-size: 0.9rem;
+  flex: none;
+}
+
+.claim-mode-toggle label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.shared-split {
+  margin-top: 12px;
+}
+
+.shared-split > p {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin: 0 0 8px;
+}
+
+.participant-checkboxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+}
+
+.participant-checkboxes label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+/* ----- Participants ----------------------------------------------- */
 
 .participant-add {
   display: flex;
@@ -125,23 +402,17 @@ section + .section-actions {
   margin-top: 16px;
 }
 
+/* ----- Actions row ------------------------------------------------ */
+
 .section-actions {
   display: flex;
   justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 20px;
 }
 
-.receipt-preview img {
-  max-width: 100%;
-  border-radius: 12px;
-  margin-top: 16px;
-}
-
-.card {
-  background: #f1f5f9;
-  border-radius: 12px;
-  padding: 20px;
-  margin-top: 16px;
-}
+/* ----- Party choices ------------------------------------------- */
 
 .party-choice-grid {
   display: grid;
@@ -150,9 +421,77 @@ section + .section-actions {
 }
 
 .party-choice-grid > div {
-  padding: 8px;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
 }
 
 .party-choice-grid h3 {
   margin-top: 0;
+}
+
+/* ----- Feedback ---------------------------------------------------- */
+
+.field-error {
+  color: var(--danger);
+  font-size: 0.85rem;
+}
+
+p.field-error {
+  background: var(--danger-bg);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+}
+
+/* ----- Inline code ----------------------------------------------- */
+
+code {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 0.85em;
+  word-break: break-all;
+}
+
+/* ----- Responsive ---------------------------------------------- */
+
+@media (max-width: 640px) {
+  .app-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  nav {
+    width: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  nav a,
+  .nav-link {
+    white-space: nowrap;
+    padding: 10px 12px;
+  }
+
+  button,
+  .button {
+    padding: 12px 18px;
+  }
+
+  .section-actions .button,
+  .section-actions button {
+    flex: 1 1 auto;
+    text-align: center;
+  }
+
+  .item-header {
+    flex-direction: column;
+  }
+
+  .participant-add {
+    flex-direction: column;
+  }
 }

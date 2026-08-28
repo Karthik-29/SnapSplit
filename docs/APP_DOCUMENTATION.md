@@ -161,8 +161,9 @@ This is a Google Cloud project setting, not something the app's source code can 
 
 ```text
 src/
-  App.tsx                    Route shell, navigation, and party gate
+  App.tsx                    Route shell, brand header + nav, and party gate
   main.tsx                   React bootstrap and provider composition
+  styles.css                 Whole-app stylesheet: design tokens + light/dark theme (see §16)
 
   context/
     AppContext.tsx           Live bill state and state mutation functions (items, totals, participants, claims)
@@ -222,6 +223,7 @@ src/
     SheetExportPage.tsx      Route wrapper for Sheet status
 
   components/
+    Logo.tsx                 SnapSplit mark: inline SVG, drawn in currentColor (see §16)
     PartySync.tsx            Debounced autosync from AppContext to Google Sheet
     ReceiptUpload.tsx        Upload image, run inferReceiptBill, convert via toLegacyReceipt
     ReceiptReview.tsx        Edit parsed items and receipt subtotal/total; shows live mismatch and totalBelowSubtotal warnings
@@ -265,6 +267,8 @@ Provider responsibilities:
 - If a party is connected and `party.role === 'owner'`, `/` renders `ReceiptUploadPage`; otherwise (a participant who joined) `/` renders `ReceiptReviewPage`, since the owner's receipt already exists and re-uploading would overwrite it via `PartySync`.
 - Workflow routes are shown in navigation only after a party is open; the Upload link itself is shown only for `role === 'owner'`.
 - `/party` is always available so users can create, join, refresh, or view the current party.
+
+The header renders a brand lockup (`<Logo>` + "Snap**Split**" wordmark) linking to `/`, and the nav uses `react-router-dom`'s `NavLink` (`className="nav-link"`, `end` on the `/` link) so the current route is highlighted. Visual styling of the shell, header, and every screen is described in §16.
 
 ## 8. Key Functions by Module
 
@@ -809,3 +813,41 @@ These are not bugs in this document; they are the current implementation boundar
 - Google sign-in now always shows the account chooser (`prompt: 'select_account'`), but the resulting token is cached for the lifetime of the page load (`AuthContext`) — there's no "switch account" affordance short of a full reload or `signOut()` (which itself isn't wired into any UI yet).
 
 The most valuable next hardening work would be to persist subtotal/total in `META` or a dedicated totals tab, add stale-row deletion, add tests for the Google Sheet adapter, and wire quadrilateral detection into the image pipeline so perspective correction stops being dead code.
+
+## 16. UI Theme, Branding, and Responsive Layout
+
+The entire UI is styled by one hand-written stylesheet, [src/styles.css](../src/styles.css) (imported once in `main.tsx`). There is no CSS framework, no CSS-in-JS, and no build-time style tooling beyond Vite's default CSS handling. Components carry only semantic class names (`.card`, `.receipt-table`, `.item-claim-card`, …); all visual decisions live in the stylesheet.
+
+### Design tokens and theming
+
+`styles.css` opens with a `:root` block of CSS custom properties — colour roles (`--bg`, `--surface`, `--surface-2`, `--text`, `--text-muted`, `--border`, `--accent`, `--accent-hover`, `--accent-contrast`, `--danger`, `--danger-bg`), elevation (`--shadow-sm`, `--shadow-md`), radii (`--radius-sm`/`--radius`/`--radius-lg`), `--maxw`, and the `--font` stack. Every rule below references tokens rather than literal colours.
+
+Dark mode is a single `@media (prefers-color-scheme: dark)` block that re-defines the same colour/shadow tokens. There is **no toggle and no persisted preference** — the app follows the OS/browser setting. Because components only ever reference tokens, nothing else in the stylesheet is theme-aware. `index.html` carries matching `<meta name="theme-color">` entries for light/dark so mobile browser chrome tracks the theme.
+
+The palette is a warm near-neutral (off-white `#fafaf8` / warm-charcoal `#131311` grounds) with a single teal accent (`#0f766e` light, brightened to `#2dd4bf` in dark for contrast). Accent is used only for primary actions, links, active nav, and the logo.
+
+### Branding
+
+- [src/components/Logo.tsx](../src/components/Logo.tsx) — a stateless inline-SVG mark (a receipt with a diagonal cut through it). It draws its outline and text lines in `currentColor`, so the header simply sets `color: var(--accent)` on it and it re-tints automatically in dark mode. The diagonal "cut" is stroked in `var(--bg)` so it reads as a gap punched through the mark against whatever sits behind it. Takes a single `size` prop (px, default 24); `aria-hidden` since the adjacent wordmark carries the name.
+- [public/favicon.svg](../public/favicon.svg) — the same motif as a standalone favicon, with its own `<style>` block (including a nested `prefers-color-scheme: dark` rule) since a favicon has no access to the page's tokens. Referenced from `index.html` as `rel="icon" type="image/svg+xml"`.
+- The header wordmark is "Snap" in `--text` + "Split" in `--accent` (`.wordmark span`), tracked tight.
+
+### Responsive / mobile behaviour
+
+The app is expected to be usable on Chrome Android and iOS Safari at ~375px width. Concrete measures in `styles.css`:
+
+- Global `* { box-sizing: border-box }` and full-width form controls, so 100%-width inputs never overflow their container.
+- `.app-shell` padding is `clamp(16px, 4vw, 32px)`.
+- Wide tables (`ReceiptReview` has five columns of editable fields) are never allowed to widen the page: every `.receipt-table` sits inside `.card`, and `.card` has `overflow-x: auto` (+ `-webkit-overflow-scrolling: touch`) so the table scrolls within its card.
+- Below `640px`: the header stacks, the nav becomes a single horizontal scroll strip, `.item-header` and `.participant-add` stack, nav links and buttons get larger tap targets, and `.section-actions` buttons go full-width.
+- Form controls are pinned to `font-size: 16px` — under 16px, iOS Safari zooms the viewport on focus, which the smaller `.receipt-totals` label context would otherwise trigger.
+- `:focus-visible` gets an explicit accent outline on inputs, buttons, and links.
+
+Previously unstyled component class names (`.item-claim-card`, `.item-header`, `.claim-mode-toggle`, `.shared-split`, `.participant-checkboxes`, block-level `.field-error`) now all have rules; the shared-participant checkboxes render as pill chips.
+
+### What is not done
+
+- No visual regression / screenshot tests; the UI is still verified manually via `npm run dev` (consistent with §14, §15).
+- No dark-mode toggle — OS-driven only.
+- The active nav link does not auto-scroll into view within the mobile nav strip.
+- Google Picker / OAuth popup UI is Google's own and is not themed by SnapSplit.

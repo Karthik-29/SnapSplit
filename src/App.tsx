@@ -1,4 +1,5 @@
-import { Link, Route, Routes } from 'react-router-dom';
+import { Link, NavLink, Route, Routes } from 'react-router-dom';
+import Logo from './components/Logo';
 import ReceiptUploadPage from './routes/ReceiptUploadPage';
 import ReceiptReviewPage from './routes/ReceiptReviewPage';
 import ItemClaimPage from './routes/ItemClaimPage';
@@ -17,15 +18,18 @@ function App() {
       <PartySync />
       <header className="app-header">
         <div>
-          <h1>SnapSplit</h1>
+          <Link to="/" className="brand" aria-label="SnapSplit home">
+            <Logo size={28} />
+            <span className="wordmark">Snap<span>Split</span></span>
+          </Link>
           <nav>
-            {party?.role === 'owner' && <Link to="/">Upload</Link>}
-            {party && <><Link to="/review">Review</Link>
-            <Link to="/participants">Participants</Link>
-            <Link to="/claim">Claim</Link>
-            <Link to="/settlement">Settlement</Link>
-            <Link to="/export">Export</Link></>}
-            <Link to="/party">Party</Link>
+            {party?.role === 'owner' && <NavLink to="/" end className="nav-link">Upload</NavLink>}
+            {party && <><NavLink to="/review" className="nav-link">Review</NavLink>
+            <NavLink to="/participants" className="nav-link">Participants</NavLink>
+            <NavLink to="/claim" className="nav-link">Claim</NavLink>
+            <NavLink to="/settlement" className="nav-link">Settlement</NavLink>
+            <NavLink to="/export" className="nav-link">Export</NavLink></>}
+            <NavLink to="/party" className="nav-link">Party</NavLink>
           </nav>
         </div>
       </header>
