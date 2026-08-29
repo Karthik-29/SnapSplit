@@ -108,14 +108,16 @@ A SnapSplit party is represented by one Google spreadsheet with four tabs:
 The current schema version is `1`, stored in `META` as:
 
 ```text
-schema_version | 1
-currency       | INR
-created_at     | ISO timestamp
-discount_type  | amount | percent | (blank)
-discount_value | number | (blank)
+schema_version   | 1
+currency         | INR
+created_at       | ISO timestamp
+discount_type    | amount | percent | (blank)
+discount_value   | number | (blank)
+receipt_subtotal | number | (blank)
+receipt_total    | number | (blank)
 ```
 
-`discount_type` / `discount_value` hold the whole-bill discount. They are written by `syncParty` and read back by `loadParty` (via `parseDiscount`); a blank value, missing rows, or an unrecognised type all read back as "no discount". Adding these keys did **not** bump the schema version — `META` is key/value and older parties simply lack the rows. `receiptSubtotal` / `receiptTotal` remain un-persisted (see §12).
+`discount_type` / `discount_value` hold the whole-bill discount. They are written by `syncParty` and read back by `loadParty` (via `parseDiscount`); a blank value, missing rows, or an unrecognised type all read back as "no discount". `receipt_subtotal` / `receipt_total` hold the printed bill subtotal and grand total so the derived tax (`total − subtotal`) survives a reload for anyone who joins the party; they are written by `syncParty` and read back by `loadParty` (via `parseAmountMeta`), and a blank / missing / non-numeric / negative value reads back as "not set". Adding these keys did **not** bump the schema version — `META` is key/value and older parties simply lack the rows.
 
 The spreadsheet ID comes from a Google Sheets URL like:
 
@@ -323,13 +325,14 @@ Reads a SnapSplit Sheet and reconstructs `BillState`:
 - Reads `USERS`, `ITEMS`, and `CLAIMS`.
 - Converts Sheet rows into participants, receipt items, and item claims.
 - Reconstructs the whole-bill discount from `META.discount_type` / `discount_value` via `parseDiscount` (blank/missing/unrecognised → no discount).
+- Reconstructs `receiptSubtotal` / `receiptTotal` from `META.receipt_subtotal` / `receipt_total` via `parseAmountMeta` (blank/missing/non-numeric/negative → not set).
 - Returns `Omit<Party, 'role'>` — the Sheet has no concept of role, so the caller (`PartyPage`, based on whether it called this after create or join) attaches `role` itself.
 
 `syncParty(token, party)`
 
 Writes current app state to the remote Google Sheet:
 
-- Upserts the `discount_type` / `discount_value` rows into `META` (only these two keys — `schema_version`, `currency`, `created_at` are untouched).
+- Upserts the `discount_type` / `discount_value` / `receipt_subtotal` / `receipt_total` rows into `META` (only these keys — `schema_version`, `currency`, `created_at` are untouched).
 - Upserts participant rows into `USERS`.
 - Upserts item rows into `ITEMS`.
 - Upserts claim rows into `CLAIMS`.
@@ -766,6 +769,7 @@ What is saved:
 - Receipt items
 - Item claims
 - Whole-bill discount (`META.discount_type` / `discount_value`)
+- Receipt subtotal and grand total (`META.receipt_subtotal` / `receipt_total`)
 
 What is loaded:
 
@@ -773,10 +777,10 @@ What is loaded:
 - Receipt items
 - Item claims
 - Whole-bill discount
+- Receipt subtotal and grand total
 
 Current important limitation:
 
-- `receiptSubtotal` and `receiptTotal` are part of local `BillState`, but the current Sheet schema does not persist them. After a reload from Sheet, `loadParty` reconstructs items, participants, and claims, but not the receipt subtotal/total — this now also applies to a value the user manually typed into Review's editable subtotal/total fields (`updateReceiptTotals`), not just an OCR-extracted one: either way, it is lost on reload until the Sheet schema stores it.
 - `syncRows` updates and appends rows, but it does not currently delete stale remote rows when local items, participants, or claims are removed.
 - `settlements` are not calculated yet; participant shares are calculated.
 
@@ -847,7 +851,6 @@ These are not bugs in this document; they are the current implementation boundar
 - No Drive permission management.
 - No realtime multi-user conflict handling.
 - No stale-row deletion in Google Sheets sync.
-- No Sheet persistence for receipt subtotal/total — including a value the user manually typed into Review, not just an OCR-extracted one (see §12).
 - No settlement transfer optimization yet.
 - OCR implementation uses Tesseract, while the product spec references PaddleOCR.js.
 - Perspective correction (`image/perspective.ts`) is unused — nothing in the pipeline detects a receipt quadrilateral to feed it, so a skewed photo is never rectified before OCR.
@@ -858,11 +861,11 @@ These are not bugs in this document; they are the current implementation boundar
 - Component-level UI tests (e.g. for the owner/participant Upload-link gating in `App.tsx`) are not present: this repo has no jsdom/happy-dom test environment configured, and adding one just for a single assertion was judged not worth introducing a first-of-its-kind RTL setup. That behavior is currently verified manually via `npm run dev` instead, consistent with how the rest of the UI is checked.
 - A dropped/hallucinated decimal point on a printed total is only detectable when a row has an independently-read rate to cross-validate against (3+ numeric values). A 2-value row (quantity + total only, no separate rate) has no second number to check it against, so this class of OCR error is only caught, if at all, by the bill-level items-vs-subtotal mismatch check in Review, not row-locally.
 - The OCR pipeline's own `ParsedBill.reconciliation` (whether the receipt's *printed* summary section is internally consistent) is computed but not surfaced in the UI — only the live items-vs-subtotal/total check added to Review (`checkItemsAgainstReceiptTotal`, recomputed as the user edits) is currently shown to the user.
-- If a receipt's total is genuinely never known (only subtotal, or neither), `calculateBillResults` derives tax as `total - subtotal`, which silently becomes `0` rather than "unknown" in that case — pre-existing behavior, more likely to surface now that totals are directly editable in Review.
+- If a receipt's total is genuinely never known (only subtotal, or neither), `calculateBillResults` derives tax as `total - subtotal`, which silently becomes `0` rather than "unknown" in that case — pre-existing behavior, more likely to surface now that totals are directly editable in Review. Subtotal/total are now persisted to `META` (`receipt_subtotal` / `receipt_total`), so a value entered by one participant carries to anyone who later loads the party.
 - The whole-bill discount reduces `totalBill` directly (`totalBill = preDiscountTotal - discount`) and is independent of the `total - subtotal` tax derivation: a percentage discount always resolves against `receiptSubtotal ?? itemSubTotal`, so if the scanned receipt already had its own printed discount baked into the total, entering it again here would double-count. The Discount field is for a reduction the group is applying on top of the receipt, not for transcribing a discount line already on it.
 - Google sign-in now always shows the account chooser (`prompt: 'select_account'`), but the resulting token is cached for the lifetime of the page load (`AuthContext`) — there's no "switch account" affordance short of a full reload or `signOut()` (which itself isn't wired into any UI yet).
 
-The most valuable next hardening work would be to persist subtotal/total in `META` or a dedicated totals tab, add stale-row deletion, add tests for the Google Sheet adapter, and wire quadrilateral detection into the image pipeline so perspective correction stops being dead code.
+The most valuable next hardening work would be to add stale-row deletion, add tests for the Google Sheet adapter, and wire quadrilateral detection into the image pipeline so perspective correction stops being dead code.
 
 ## 16. UI Theme, Branding, and Responsive Layout
 
