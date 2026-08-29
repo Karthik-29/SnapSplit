@@ -111,4 +111,35 @@ describe('runReviewChecks', () => {
     const checks = runReviewChecks({ result, items, receiptSubtotal: 600, receiptTotal: 600, participantCount: 3 });
     expect(statusFor(checks, 'no-over-claimed-items')).toBe('warn');
   });
+
+  it('does not flag "total below subtotal" when the gap is exactly the receipt discount', () => {
+    const result: BillCalculationResult = { ...cleanResult, total: 480, totalBill: 480, receiptDiscount: 120 };
+    const checks = runReviewChecks({
+      result,
+      items,
+      receiptSubtotal: 600,
+      receiptTotal: 480,
+      receiptDiscount: { type: 'amount', value: 120 },
+      participantCount: 3,
+    });
+    expect(statusFor(checks, 'items-match-receipt')).toBe('pass');
+  });
+
+  it('warns when the receipt discount had to be capped', () => {
+    const result: BillCalculationResult = { ...cleanResult, totalBill: 0, discount: 600, receiptDiscount: 600 };
+    const checks = runReviewChecks({
+      result,
+      items,
+      receiptSubtotal: 600,
+      receiptTotal: 600,
+      receiptDiscount: { type: 'amount', value: 5000 },
+      participantCount: 3,
+    });
+    expect(statusFor(checks, 'receipt-discount-in-full')).toBe('warn');
+  });
+
+  it('omits the receipt-discount check when none is set', () => {
+    const checks = runReviewChecks({ result: cleanResult, items, receiptSubtotal: 600, receiptTotal: 600, participantCount: 3 });
+    expect(checks.some((check) => check.id === 'receipt-discount-in-full')).toBe(false);
+  });
 });

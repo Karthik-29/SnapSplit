@@ -18,7 +18,7 @@ export function calculateBillResults(
   items: BillItem[],
   participants: Participant[],
   itemClaims: ItemClaim[],
-  receiptTotals?: { subtotal?: number; total?: number },
+  receiptTotals?: { subtotal?: number; total?: number; discount?: BillDiscount },
   discount?: BillDiscount
 ): BillCalculationResult {
   const participantIds = participants.map((participant) => participant.id);
@@ -61,7 +61,13 @@ export function calculateBillResults(
   const itemSubTotal = sum(items.map((item) => item.totalPrice));
   const receiptSubtotal = receiptTotals?.subtotal ?? itemSubTotal;
   const receiptTotal = receiptTotals?.total ?? itemSubTotal;
-  const rawTax = receiptTotal - receiptSubtotal;
+  // A discount already printed on the receipt is baked into `receiptTotal`. Add
+  // it back to recover the pre-discount total (subtotal + tax + charges) that
+  // the tax figure is derived from, then subtract it again as part of the
+  // distributed discount pool below.
+  const receiptDiscount = resolveDiscountValue(receiptTotals?.discount, receiptSubtotal);
+  const grossTotal = receiptTotal + receiptDiscount;
+  const rawTax = grossTotal - receiptSubtotal;
   const tax = rawTax > 0 ? Number(rawTax.toFixed(2)) : 0;
 
   const taxShares = distributeProportionally(tax, shares, participantIds, itemSubTotal);
@@ -69,13 +75,23 @@ export function calculateBillResults(
   // The discount is a mirror of tax: resolve it to a rupee figure, then split it
   // by the same pre-tax item-share ratios so it nets out of `totalBill` exactly.
   // It is clamped to what participants collectively owe (base + tax) so no
-  // individual share can be driven negative once the pool is distributed.
+  // individual share can be driven negative once the pool is distributed. The
+  // receipt discount comes off first (it is already reflected in the printed
+  // total), then the group discount off whatever is still owed.
   const totalOwedBeforeDiscount = participantIds.reduce(
     (running, participantId) => running + (shares[participantId] ?? 0) + (taxShares[participantId] ?? 0),
     0
   );
-  const preDiscountTotal = receiptTotal > 0 ? receiptTotal : itemSubTotal;
-  const discountAmount = resolveDiscountAmount(discount, receiptSubtotal, totalOwedBeforeDiscount);
+  const preDiscountTotal = grossTotal > 0 ? grossTotal : itemSubTotal;
+  const receiptDiscountAmount = Number(
+    Math.min(receiptDiscount, Math.max(totalOwedBeforeDiscount, 0)).toFixed(2)
+  );
+  const groupDiscountAmount = resolveDiscountAmount(
+    discount,
+    receiptSubtotal,
+    totalOwedBeforeDiscount - receiptDiscountAmount
+  );
+  const discountAmount = Number((receiptDiscountAmount + groupDiscountAmount).toFixed(2));
   const discountShares = distributeProportionally(discountAmount, shares, participantIds, itemSubTotal);
 
   const participantSummaries: ParticipantSummary[] = participants.map((participant) => {
@@ -98,6 +114,7 @@ export function calculateBillResults(
     total: receiptTotal,
     tax,
     discount: discountAmount,
+    receiptDiscount: receiptDiscountAmount,
     participantSummaries,
     settlements: [],
     itemsNeedingReview,
@@ -105,22 +122,32 @@ export function calculateBillResults(
 }
 
 /**
+ * Resolves a `BillDiscount` to a plain rupee figure (percent against the receipt
+ * subtotal, flat amount as-is), floored at 0 and rounded to 2dp. A `percent`
+ * over 100 is clamped to 100 here so a bad value can never exceed the subtotal —
+ * it is also surfaced to the user as a review-check failure upstream.
+ */
+function resolveDiscountValue(discount: BillDiscount | undefined, receiptSubtotal: number): number {
+  if (!discount || discount.value <= 0) {
+    return 0;
+  }
+  const requested = discount.type === 'percent'
+    ? (Math.min(discount.value, 100) / 100) * receiptSubtotal
+    : discount.value;
+  return Number(Math.max(requested, 0).toFixed(2));
+}
+
+/**
  * Turns a `BillDiscount` into the rupee amount to actually take off the bill:
- * percentages resolve against the receipt subtotal, negatives are ignored, and
- * the result is capped at `maxDiscount` (what participants collectively owe) so
- * the bill can never go below zero.
+ * `resolveDiscountValue` plus a cap at `maxDiscount` (what participants
+ * collectively owe) so the bill can never go below zero.
  */
 function resolveDiscountAmount(
   discount: BillDiscount | undefined,
   receiptSubtotal: number,
   maxDiscount: number
 ): number {
-  if (!discount || discount.value <= 0) {
-    return 0;
-  }
-  const requested = discount.type === 'percent'
-    ? (discount.value / 100) * receiptSubtotal
-    : discount.value;
-  const clamped = Math.min(Math.max(requested, 0), Math.max(maxDiscount, 0));
+  const requested = resolveDiscountValue(discount, receiptSubtotal);
+  const clamped = Math.min(requested, Math.max(maxDiscount, 0));
   return Number(clamped.toFixed(2));
 }

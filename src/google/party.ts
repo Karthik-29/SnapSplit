@@ -119,6 +119,7 @@ export async function loadParty(token: string, spreadsheetId: string): Promise<O
   const discount = parseDiscount(meta);
   const receiptSubtotal = parseAmountMeta(meta, 'receipt_subtotal');
   const receiptTotal = parseAmountMeta(meta, 'receipt_total');
+  const receiptDiscount = parseReceiptDiscount(meta);
   const participants: Participant[] = users.slice(1).filter((r) => r[0] && r[1]).map((r) => ({ id: r[0], name: r[1] }));
   const receiptItems: BillItem[] = items.slice(1).filter((r) => r[0]).map((r) => ({ id: r[0], name: r[1] || 'Unnamed item', quantity: Number(r[2]) || 0, unitPrice: Number(r[3]) || 0, totalPrice: Number(r[4]) || 0 }));
   const itemClaims: ItemClaim[] = receiptItems.map((item) => {
@@ -131,7 +132,7 @@ export async function loadParty(token: string, spreadsheetId: string): Promise<O
       individualQuantities: Object.fromEntries(rows.filter((r) => r[3] !== 'shared' && r[1]).map((r) => [r[1], Number(r[2]) || 0])),
     };
   });
-  return { spreadsheetId, state: { receiptItems, receiptSubtotal, receiptTotal, participants, itemClaims, discount } };
+  return { spreadsheetId, state: { receiptItems, receiptSubtotal, receiptTotal, receiptDiscount, participants, itemClaims, discount } };
 }
 
 // Discount lives as two META rows (`discount_type` / `discount_value`) rather
@@ -148,15 +149,41 @@ function parseDiscount(meta: string[][]): BillDiscount | undefined {
 }
 
 // `receipt_subtotal` / `receipt_total` are stored as plain META rows, like the
-// discount. They carry the printed bill subtotal and grand total so that the
-// derived tax (total − subtotal) survives a reload for anyone who joins the
-// party. A missing row or a blank / non-numeric / negative value reads back as
+// discount. They carry the printed bill subtotal and grand total so the derived
+// tax (grossTotal − subtotal) survives a reload for anyone who joins the party.
+// A missing row or a blank / non-numeric / negative value reads back as
 // `undefined` (not set).
 function parseAmountMeta(meta: string[][], key: string): number | undefined {
   const raw = meta.find((row) => row[0] === key)?.[1];
   if (raw === undefined || raw === '') return undefined;
   const value = Number(raw);
   return Number.isFinite(value) && value >= 0 ? value : undefined;
+}
+
+// The receipt discount (`receipt_discount_type` / `receipt_discount_value`)
+// mirrors the group discount but is validated strictly: because it feeds the tax
+// derivation, a malformed value (unknown type, non-numeric, negative, or a
+// percentage above 100) is a data error worth stopping on rather than silently
+// dropping. Missing / blank rows are fine and mean "no receipt discount".
+function parseReceiptDiscount(meta: string[][]): BillDiscount | undefined {
+  const valueOf = (key: string) => meta.find((row) => row[0] === key)?.[1];
+  const type = valueOf('receipt_discount_type');
+  const rawValue = valueOf('receipt_discount_value');
+  if ((type === undefined || type === '') && (rawValue === undefined || rawValue === '')) {
+    return undefined;
+  }
+  const value = Number(rawValue);
+  if (
+    (type !== 'amount' && type !== 'percent') ||
+    !Number.isFinite(value) ||
+    value < 0 ||
+    (type === 'percent' && value > 100)
+  ) {
+    throw new Error(
+      "This SnapSplit party has an invalid receipt discount — check receipt_discount_type / receipt_discount_value on the META tab.",
+    );
+  }
+  return value > 0 ? { type, value } : undefined;
 }
 
 async function syncRows(token: string, id: string, sheet: string, keyIndexes: number[], desired: string[][]) {
@@ -181,6 +208,8 @@ export async function syncParty(token: string, party: Pick<Party, 'spreadsheetId
     ['discount_value', state.discount ? String(state.discount.value) : ''],
     ['receipt_subtotal', state.receiptSubtotal != null ? String(state.receiptSubtotal) : ''],
     ['receipt_total', state.receiptTotal != null ? String(state.receiptTotal) : ''],
+    ['receipt_discount_type', state.receiptDiscount?.type ?? ''],
+    ['receipt_discount_value', state.receiptDiscount ? String(state.receiptDiscount.value) : ''],
   ]);
   await syncRows(token, spreadsheetId, SHEETS.users, [0], state.participants.map((p) => [p.id, p.name]));
   await syncRows(token, spreadsheetId, SHEETS.items, [0], state.receiptItems.map((i) => [i.id, i.name, String(i.quantity), String(i.unitPrice), String(i.totalPrice)]));

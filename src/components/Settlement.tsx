@@ -12,10 +12,11 @@ function Settlement() {
         items: state.receiptItems,
         receiptSubtotal: state.receiptSubtotal,
         receiptTotal: state.receiptTotal,
+        receiptDiscount: state.receiptDiscount,
         discount: state.discount,
         participantCount: state.participants.length,
       }),
-    [calculationResult, state.receiptItems, state.receiptSubtotal, state.receiptTotal, state.discount, state.participants.length],
+    [calculationResult, state.receiptItems, state.receiptSubtotal, state.receiptTotal, state.receiptDiscount, state.discount, state.participants.length],
   );
 
   const checkSymbol = { pass: '✓', warn: '!', fail: '✕' } as const;

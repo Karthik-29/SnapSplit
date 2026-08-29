@@ -34,11 +34,18 @@ export function checkItemsAgainstReceiptTotal(
   items: BillItem[],
   subtotal?: number,
   total?: number,
+  receiptDiscount = 0,
 ): ItemReconciliation {
   const itemSum = Number(items.reduce((sum, item) => sum + item.totalPrice, 0).toFixed(2));
   const referenceLabel = subtotal !== undefined ? 'subtotal' : total !== undefined ? 'total' : null;
   const referenceValue = subtotal ?? total ?? null;
-  const totalBelowSubtotal = subtotal !== undefined && total !== undefined && total < subtotal - TOLERANCE;
+  // A discount printed on the receipt legitimately pushes the payable total
+  // below the subtotal, so compare against the total with that discount added
+  // back before flagging it as a likely misread.
+  const totalBelowSubtotal =
+    subtotal !== undefined &&
+    total !== undefined &&
+    total + Math.max(0, receiptDiscount) < subtotal - TOLERANCE;
 
   if (referenceValue === null) {
     return { itemSum, referenceLabel, referenceValue, difference: null, status: 'insufficient_data', totalBelowSubtotal };

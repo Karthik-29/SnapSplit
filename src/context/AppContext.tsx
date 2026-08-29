@@ -6,7 +6,7 @@ import { BillDiscount, BillState, ItemClaim, Participant } from '../bill/models'
 
 type RestorableState = Pick<
   BillState,
-  'receiptItems' | 'receiptSubtotal' | 'receiptTotal' | 'discount' | 'participants' | 'itemClaims'
+  'receiptItems' | 'receiptSubtotal' | 'receiptTotal' | 'receiptDiscount' | 'discount' | 'participants' | 'itemClaims'
 >;
 
 export type AppContextValue = {
@@ -18,6 +18,7 @@ export type AppContextValue = {
   updateBillItem: (item: BillItem) => void;
   setBillItems: (items: BillItem[], receiptTotals?: { subtotal?: number; total?: number }) => void;
   updateReceiptTotals: (totals: { subtotal?: number; total?: number }) => void;
+  updateReceiptDiscount: (discount: BillDiscount | undefined) => void;
   updateDiscount: (discount: BillDiscount | undefined) => void;
   addBillItem: () => void;
   removeBillItem: (itemId: string) => void;
@@ -39,6 +40,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [itemClaims, setItemClaims] = useState<ItemClaim[]>(initialClaims);
   const [receiptSubtotal, setReceiptSubtotal] = useState<number | undefined>(undefined);
   const [receiptTotal, setReceiptTotal] = useState<number | undefined>(undefined);
+  const [receiptDiscount, setReceiptDiscount] = useState<BillDiscount | undefined>(undefined);
   const [discount, setDiscount] = useState<BillDiscount | undefined>(undefined);
 
   const addParticipant = (name: string, idOverride?: string) => {
@@ -71,6 +73,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setItems(nextState.receiptItems);
     setReceiptSubtotal(nextState.receiptSubtotal);
     setReceiptTotal(nextState.receiptTotal);
+    setReceiptDiscount(nextState.receiptDiscount);
     setDiscount(nextState.discount);
     setParticipantsState(nextState.participants);
     setItemClaims(nextState.itemClaims);
@@ -97,6 +100,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setItems(nextItems);
     setReceiptSubtotal(totals?.subtotal);
     setReceiptTotal(totals?.total);
+    setReceiptDiscount(undefined);
     setItemClaims((claims) => {
       const existingClaims = claims.filter((claim) => nextItems.some((item) => item.id === claim.itemId));
       const newClaims = nextItems
@@ -117,6 +121,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // the app has a single "no discount" representation to check against.
   const updateDiscount = (nextDiscount: BillDiscount | undefined) => {
     setDiscount(nextDiscount && nextDiscount.value > 0 ? nextDiscount : undefined);
+  };
+
+  // A discount already applied on the receipt (flat amount or a percent of the
+  // subtotal). Same "no discount = undefined" rule as `updateDiscount`.
+  const updateReceiptDiscount = (nextDiscount: BillDiscount | undefined) => {
+    setReceiptDiscount(nextDiscount && nextDiscount.value > 0 ? nextDiscount : undefined);
   };
 
   const addBillItem = () => {
@@ -145,12 +155,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const calculationResult = useMemo(
-    () => calculateBillResults(items, participants, itemClaims, { subtotal: receiptSubtotal, total: receiptTotal }, discount),
-    [items, participants, itemClaims, receiptSubtotal, receiptTotal, discount]
+    () => calculateBillResults(
+      items,
+      participants,
+      itemClaims,
+      { subtotal: receiptSubtotal, total: receiptTotal, discount: receiptDiscount },
+      discount,
+    ),
+    [items, participants, itemClaims, receiptSubtotal, receiptTotal, receiptDiscount, discount]
   );
 
   const value = {
-    state: { receiptItems: items, receiptSubtotal, receiptTotal, discount, participants, itemClaims },
+    state: { receiptItems: items, receiptSubtotal, receiptTotal, receiptDiscount, discount, participants, itemClaims },
     addParticipant,
     removeParticipant,
     setParticipants,
@@ -158,6 +174,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     updateBillItem,
     setBillItems,
     updateReceiptTotals,
+    updateReceiptDiscount,
     updateDiscount,
     addBillItem,
     removeBillItem,

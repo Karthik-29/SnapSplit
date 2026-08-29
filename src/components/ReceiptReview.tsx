@@ -5,8 +5,16 @@ import { checkItemsAgainstReceiptTotal } from '../bill/reconciliation';
 import { BillDiscount } from '../bill/models';
 
 function ReceiptReview() {
-  const { state, updateBillItem, updateReceiptTotals, updateDiscount, addBillItem, removeBillItem, calculationResult } =
-    useAppContext();
+  const {
+    state,
+    updateBillItem,
+    updateReceiptTotals,
+    updateReceiptDiscount,
+    updateDiscount,
+    addBillItem,
+    removeBillItem,
+    calculationResult,
+  } = useAppContext();
 
   // The ₹/% choice is kept locally so the toggle still reflects the user's pick
   // before they've typed a value (a value-less discount isn't stored in state).
@@ -14,9 +22,35 @@ function ReceiptReview() {
   const discountValue = state.discount?.value;
   const appliedDiscount = calculationResult.discount ?? 0;
 
+  const [receiptDiscountType, setReceiptDiscountType] = useState<BillDiscount['type']>(
+    state.receiptDiscount?.type ?? 'amount',
+  );
+  const receiptDiscountValue = state.receiptDiscount?.value;
+  // Raw text while the receipt-discount field is being edited, so a percentage
+  // the user is mid-typing isn't snapped to its 100 cap on the first keystroke.
+  const [receiptDiscountDraft, setReceiptDiscountDraft] = useState<string | null>(null);
+
+  const receiptDiscountError = useMemo(() => {
+    const d = state.receiptDiscount;
+    if (!d || d.value <= 0) return null;
+    if (d.type === 'percent' && d.value > 100) {
+      return 'A receipt discount percentage can’t be more than 100%.';
+    }
+    if (d.type === 'amount' && state.receiptSubtotal !== undefined && d.value > state.receiptSubtotal + 0.01) {
+      return `The receipt discount (₹${d.value.toFixed(2)}) is more than the receipt subtotal (₹${state.receiptSubtotal.toFixed(2)}). Check the value against the bill.`;
+    }
+    return null;
+  }, [state.receiptDiscount, state.receiptSubtotal]);
+
   const reconciliation = useMemo(
-    () => checkItemsAgainstReceiptTotal(state.receiptItems, state.receiptSubtotal, state.receiptTotal),
-    [state.receiptItems, state.receiptSubtotal, state.receiptTotal],
+    () =>
+      checkItemsAgainstReceiptTotal(
+        state.receiptItems,
+        state.receiptSubtotal,
+        state.receiptTotal,
+        calculationResult.receiptDiscount ?? 0,
+      ),
+    [state.receiptItems, state.receiptSubtotal, state.receiptTotal, calculationResult.receiptDiscount],
   );
 
   const handleQuantityChange = (itemId: string, value: string) => {
@@ -103,6 +137,33 @@ function ReceiptReview() {
     updateDiscount({ type: discountType, value: Math.max(0, parseFloat(value) || 0) });
   };
 
+  // A discount already printed on the receipt (baked into the receipt total),
+  // as opposed to one the group is adding on top. A percentage is capped at 100
+  // on commit so an out-of-range value never reaches the sheet; the draft still
+  // shows what was typed until blur.
+  const handleReceiptDiscountTypeChange = (value: string) => {
+    const type = value === 'percent' ? 'percent' : 'amount';
+    setReceiptDiscountType(type);
+    if (receiptDiscountValue !== undefined) {
+      updateReceiptDiscount({ type, value: type === 'percent' ? Math.min(receiptDiscountValue, 100) : receiptDiscountValue });
+    }
+  };
+
+  const handleReceiptDiscountValueChange = (value: string) => {
+    if (value !== '' && !/^\d*\.?\d*$/.test(value)) return;
+    if (value.trim() === '') {
+      setReceiptDiscountDraft(null);
+      updateReceiptDiscount(undefined);
+      return;
+    }
+    const typed = Math.max(0, parseFloat(value) || 0);
+    const committed = receiptDiscountType === 'percent' ? Math.min(typed, 100) : typed;
+    setReceiptDiscountDraft(value);
+    updateReceiptDiscount({ type: receiptDiscountType, value: committed });
+  };
+
+  const handleReceiptDiscountBlur = () => setReceiptDiscountDraft(null);
+
   return (
     <section>
       <h2>Review Receipt</h2>
@@ -180,6 +241,31 @@ function ReceiptReview() {
               onChange={(event) => handleTotalChange(event.target.value)}
             />
           </label>
+          <label>
+            Receipt discount
+            <span className="discount-input">
+              <select
+                value={receiptDiscountType}
+                onChange={(event) => handleReceiptDiscountTypeChange(event.target.value)}
+              >
+                <option value="amount">₹ off</option>
+                <option value="percent">% off</option>
+              </select>
+              <input
+                type="text"
+                inputMode="decimal"
+                placeholder={receiptDiscountType === 'percent' ? '0–100' : '0'}
+                value={receiptDiscountDraft ?? (receiptDiscountValue ?? '')}
+                onChange={(event) => handleReceiptDiscountValueChange(event.target.value)}
+                onBlur={handleReceiptDiscountBlur}
+              />
+            </span>
+          </label>
+          <p className="field-hint">
+            “Receipt discount” is one already printed on the bill and included in the receipt total.
+            Use “Discount” below for a reduction your group is applying on top.
+          </p>
+          {receiptDiscountError && <p className="field-error">{receiptDiscountError}</p>}
           <label>
             Discount
             <span className="discount-input">

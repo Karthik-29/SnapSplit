@@ -44,10 +44,17 @@ export type BillCalculationResult = {
   tax?: number;
   /**
    * The discount actually applied, in major currency units, after resolving a
-   * percentage and clamping to what participants collectively owe. `totalBill`
-   * is already net of this amount.
+   * percentage and clamping to what participants collectively owe. Includes both
+   * the receipt discount and the group discount. `totalBill` is already net of
+   * this amount.
    */
   discount?: number;
+  /**
+   * The portion of `discount` that came from the receipt's own printed discount
+   * (resolved to a rupee figure). Exposed so review checks can reason about the
+   * printed total being legitimately below the subtotal.
+   */
+  receiptDiscount?: number;
   participantSummaries: ParticipantSummary[];
   settlements: SettlementLine[];
   /**
@@ -64,6 +71,15 @@ export type BillState = {
   receiptItems: BillItem[];
   receiptSubtotal?: number;
   receiptTotal?: number;
+  /**
+   * A discount already printed on the receipt and baked into `receiptTotal`
+   * (e.g. a "Discount -100" line above the grand total, or "10% off"). Same
+   * shape as `discount` — a flat `amount` or a `percent` of the subtotal — but
+   * kept separate because the two need opposite treatment in the tax
+   * derivation: the receipt discount is added back when computing
+   * `total - subtotal` tax, the group one is not.
+   */
+  receiptDiscount?: BillDiscount;
   discount?: BillDiscount;
   participants: Participant[];
   itemClaims: ItemClaim[];

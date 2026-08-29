@@ -31,10 +31,13 @@ export function runReviewChecks(input: {
   items: BillItem[];
   receiptSubtotal?: number;
   receiptTotal?: number;
+  receiptDiscount?: BillDiscount;
   discount?: BillDiscount;
   participantCount: number;
 }): ReviewCheck[] {
-  const { result, items, receiptSubtotal, receiptTotal, discount, participantCount } = input;
+  const { result, items, receiptSubtotal, receiptTotal, receiptDiscount, discount, participantCount } = input;
+  const subtotalForPercent = receiptSubtotal ?? result.subtotal ?? 0;
+  const appliedReceiptDiscount = result.receiptDiscount ?? 0;
   const checks: ReviewCheck[] = [];
 
   const shareSum = Number(
@@ -69,12 +72,28 @@ export function runReviewChecks(input: {
     detail: participantCount > 0 ? undefined : 'Add participants before settling.',
   });
 
+  if (receiptDiscount && receiptDiscount.value > 0) {
+    const requested =
+      receiptDiscount.type === 'percent'
+        ? (Math.min(receiptDiscount.value, 100) / 100) * subtotalForPercent
+        : receiptDiscount.value;
+    const capped = requested - appliedReceiptDiscount > TOLERANCE;
+    checks.push({
+      id: 'receipt-discount-in-full',
+      label: 'The receipt discount was applied in full',
+      status: capped ? 'warn' : 'pass',
+      detail: capped
+        ? `The receipt discount resolves to ₹${requested.toFixed(2)} but only ₹${appliedReceiptDiscount.toFixed(2)} could be applied — it exceeds what participants owe, so check the receipt discount value.`
+        : undefined,
+    });
+  }
+
   if (discount && discount.value > 0) {
     const requested =
       discount.type === 'percent'
-        ? (discount.value / 100) * (receiptSubtotal ?? result.subtotal ?? 0)
+        ? (discount.value / 100) * subtotalForPercent
         : discount.value;
-    const applied = result.discount ?? 0;
+    const applied = Number(((result.discount ?? 0) - appliedReceiptDiscount).toFixed(2));
     const capped = requested - applied > TOLERANCE;
     checks.push({
       id: 'discount-in-full',
@@ -86,7 +105,7 @@ export function runReviewChecks(input: {
     });
   }
 
-  const reconciliation = checkItemsAgainstReceiptTotal(items, receiptSubtotal, receiptTotal);
+  const reconciliation = checkItemsAgainstReceiptTotal(items, receiptSubtotal, receiptTotal, appliedReceiptDiscount);
   const reconciliationOk =
     reconciliation.status !== 'mismatch' && !reconciliation.totalBelowSubtotal;
   checks.push({
