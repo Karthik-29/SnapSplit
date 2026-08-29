@@ -27,6 +27,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Switches the repo's Pages source to "GitHub Actions" via the API, so the
+      # deploy below is what gets served. `enablement: true` means you don't have
+      # to flip anything by hand in Settings -> Pages; it works with the
+      # `pages: write` permission this workflow already has.
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
