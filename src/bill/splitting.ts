@@ -1,7 +1,7 @@
 import { BillItem } from '../receipt/models';
 
 export function roundToCents(value: number): number {
-  return Math.round(value);
+  return Math.round(value * 100) / 100;
 }
 
 export function splitSharedItemEvenly(item: BillItem, participantIds: string[]): Record<string, number> {
@@ -10,11 +10,15 @@ export function splitSharedItemEvenly(item: BillItem, participantIds: string[]):
     return {};
   }
 
-  const baseShare = Math.floor(item.totalPrice / participantCount);
-  const remainder = item.totalPrice - baseShare * participantCount;
+  // Work in integer paise/cents so a decimal price (e.g. ₹16.95) splits
+  // exactly: everyone gets the floor, and the leftover paise are handed out
+  // one each to the earliest participants so the parts sum back to the price.
+  const totalCents = Math.round(item.totalPrice * 100);
+  const baseCents = Math.floor(totalCents / participantCount);
+  const remainderCents = totalCents - baseCents * participantCount;
 
   return participantIds.reduce<Record<string, number>>((shares, id, index) => {
-    shares[id] = baseShare + (index < remainder ? 1 : 0);
+    shares[id] = (baseCents + (index < remainderCents ? 1 : 0)) / 100;
     return shares;
   }, {});
 }
@@ -82,10 +86,12 @@ export function distributeProportionally(
 }
 
 export function calculateIndividualShares(item: BillItem, claimQuantities: Record<string, number>): Record<string, number> {
-  const unitPrice = item.unitPrice;
+  // Multiply in integer paise/cents so a decimal unit price doesn't leave a
+  // float tail (e.g. 3 × 16.95 landing on 50.849999…).
+  const unitPriceCents = Math.round(item.unitPrice * 100);
   const cappedQuantities = capIndividualQuantities(item, claimQuantities);
   return Object.entries(cappedQuantities).reduce<Record<string, number>>((shares, [participantId, quantity]) => {
-    shares[participantId] = quantity * unitPrice;
+    shares[participantId] = (quantity * unitPriceCents) / 100;
     return shares;
   }, {});
 }
