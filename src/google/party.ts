@@ -1,4 +1,4 @@
-import { BillState, ItemClaim, Participant } from '../bill/models';
+import { BillDiscount, BillState, ItemClaim, Participant } from '../bill/models';
 import { BillItem } from '../receipt/models';
 
 const API = 'https://sheets.googleapis.com/v4/spreadsheets';
@@ -116,6 +116,7 @@ export async function loadParty(token: string, spreadsheetId: string): Promise<O
     getValues(token, spreadsheetId, `${SHEETS.items}!A1:E1000`), getValues(token, spreadsheetId, `${SHEETS.claims}!A1:D5000`),
   ]);
   if (!meta.some((row) => row[0] === 'schema_version' && row[1] === SCHEMA_VERSION)) throw new Error("This Google Sheet isn't a valid SnapSplit party.");
+  const discount = parseDiscount(meta);
   const participants: Participant[] = users.slice(1).filter((r) => r[0] && r[1]).map((r) => ({ id: r[0], name: r[1] }));
   const receiptItems: BillItem[] = items.slice(1).filter((r) => r[0]).map((r) => ({ id: r[0], name: r[1] || 'Unnamed item', quantity: Number(r[2]) || 0, unitPrice: Number(r[3]) || 0, totalPrice: Number(r[4]) || 0 }));
   const itemClaims: ItemClaim[] = receiptItems.map((item) => {
@@ -128,7 +129,20 @@ export async function loadParty(token: string, spreadsheetId: string): Promise<O
       individualQuantities: Object.fromEntries(rows.filter((r) => r[3] !== 'shared' && r[1]).map((r) => [r[1], Number(r[2]) || 0])),
     };
   });
-  return { spreadsheetId, state: { receiptItems, participants, itemClaims } };
+  return { spreadsheetId, state: { receiptItems, participants, itemClaims, discount } };
+}
+
+// Discount lives as two META rows (`discount_type` / `discount_value`) rather
+// than its own tab — it is a single scalar adjustment, like `currency`. Missing
+// rows, a blank value, or an unrecognised type all read back as "no discount".
+function parseDiscount(meta: string[][]): BillDiscount | undefined {
+  const valueOf = (key: string) => meta.find((row) => row[0] === key)?.[1];
+  const type = valueOf('discount_type');
+  const value = Number(valueOf('discount_value'));
+  if ((type === 'amount' || type === 'percent') && Number.isFinite(value) && value > 0) {
+    return { type, value };
+  }
+  return undefined;
 }
 
 async function syncRows(token: string, id: string, sheet: string, keyIndexes: number[], desired: string[][]) {
@@ -148,6 +162,10 @@ async function syncRows(token: string, id: string, sheet: string, keyIndexes: nu
 
 export async function syncParty(token: string, party: Pick<Party, 'spreadsheetId' | 'state'>): Promise<void> {
   const { spreadsheetId, state } = party;
+  await syncRows(token, spreadsheetId, SHEETS.meta, [0], [
+    ['discount_type', state.discount?.type ?? ''],
+    ['discount_value', state.discount ? String(state.discount.value) : ''],
+  ]);
   await syncRows(token, spreadsheetId, SHEETS.users, [0], state.participants.map((p) => [p.id, p.name]));
   await syncRows(token, spreadsheetId, SHEETS.items, [0], state.receiptItems.map((i) => [i.id, i.name, String(i.quantity), String(i.unitPrice), String(i.totalPrice)]));
   // Claims have a stable composite key, so rewrite only the changed logical rows.

@@ -69,3 +69,63 @@ describe('calculateBillResults', () => {
     expect(overClaim[0].individualQuantities).toEqual({ 'user-1': 2, 'user-2': 2, 'user-3': 0 });
   });
 });
+
+describe('calculateBillResults with a bill discount', () => {
+  // Base shares from `items`/`itemClaims` above: user-1 260, user-2 260, user-3 80 (subtotal 600).
+  it('applies a flat discount proportionally and reduces the total bill', () => {
+    const result = calculateBillResults(items, participants, itemClaims, undefined, { type: 'amount', value: 60 });
+
+    expect(result.discount).toBe(60);
+    expect(result.totalBill).toBe(540);
+    expect(result.participantSummaries).toEqual([
+      { participantId: 'user-1', name: 'Karthik', share: 234 },
+      { participantId: 'user-2', name: 'Rahul', share: 234 },
+      { participantId: 'user-3', name: 'Amit', share: 72 },
+    ]);
+  });
+
+  it('resolves a percentage against the subtotal and keeps shares summing to the total', () => {
+    const result = calculateBillResults(
+      items,
+      participants,
+      itemClaims,
+      { subtotal: 600, total: 660 },
+      { type: 'percent', value: 10 },
+    );
+
+    expect(result.discount).toBe(60);
+    // preDiscountTotal 660 (incl. ₹60 tax) − ₹60 discount = 600
+    expect(result.totalBill).toBe(600);
+    const shareSum = Number(result.participantSummaries.reduce((sum, s) => sum + s.share, 0).toFixed(2));
+    expect(shareSum).toBe(result.totalBill);
+  });
+
+  it('caps a discount larger than what participants owe and never goes negative', () => {
+    const result = calculateBillResults(items, participants, itemClaims, undefined, { type: 'amount', value: 5000 });
+
+    expect(result.discount).toBe(600);
+    expect(result.totalBill).toBe(0);
+    for (const summary of result.participantSummaries) {
+      expect(summary.share).toBeGreaterThanOrEqual(0);
+    }
+    const shareSum = Number(result.participantSummaries.reduce((sum, s) => sum + s.share, 0).toFixed(2));
+    expect(shareSum).toBe(0);
+  });
+
+  it('distributes a discount with a rounding remainder so shares still sum exactly', () => {
+    const result = calculateBillResults(items, participants, itemClaims, undefined, { type: 'amount', value: 100 });
+
+    const shareSum = Number(result.participantSummaries.reduce((sum, s) => sum + s.share, 0).toFixed(2));
+    expect(shareSum).toBe(result.totalBill);
+    expect(result.totalBill).toBe(500);
+  });
+
+  it('leaves the calculation unchanged when there is no discount', () => {
+    const withUndefined = calculateBillResults(items, participants, itemClaims);
+    const withZero = calculateBillResults(items, participants, itemClaims, undefined, { type: 'amount', value: 0 });
+
+    expect(withUndefined.totalBill).toBe(600);
+    expect(withUndefined.discount).toBe(0);
+    expect(withZero.participantSummaries).toEqual(withUndefined.participantSummaries);
+  });
+});

@@ -43,6 +43,44 @@ export function capIndividualQuantities(item: BillItem, claimQuantities: Record<
   }, {});
 }
 
+/**
+ * Splits `pool` across `orderedIds` in proportion to each id's weight, rounding
+ * every share to 2 decimal places and pushing the leftover rounding remainder
+ * onto the last id so the parts sum back to `pool` exactly. Used for both the
+ * proportional tax and the proportional discount in `calculateBillResults`.
+ *
+ * `totalWeight` is passed explicitly (rather than summed from `weightById`)
+ * because tax/discount are allocated against the item subtotal, which is not
+ * necessarily the sum of the per-participant shares.
+ */
+export function distributeProportionally(
+  pool: number,
+  weightById: Record<string, number>,
+  orderedIds: string[],
+  totalWeight: number,
+): Record<string, number> {
+  const distributed: Record<string, number> = {};
+  if (pool <= 0 || totalWeight <= 0 || orderedIds.length === 0) {
+    return distributed;
+  }
+
+  let allocated = 0;
+  orderedIds.forEach((id) => {
+    const ratio = (weightById[id] ?? 0) / totalWeight;
+    const share = Number((ratio * pool).toFixed(2));
+    distributed[id] = share;
+    allocated += share;
+  });
+
+  const remainder = Math.round((pool - allocated) * 100) / 100;
+  if (remainder !== 0) {
+    const lastId = orderedIds[orderedIds.length - 1];
+    distributed[lastId] = Number(((distributed[lastId] ?? 0) + remainder).toFixed(2));
+  }
+
+  return distributed;
+}
+
 export function calculateIndividualShares(item: BillItem, claimQuantities: Record<string, number>): Record<string, number> {
   const unitPrice = item.unitPrice;
   const cappedQuantities = capIndividualQuantities(item, claimQuantities);

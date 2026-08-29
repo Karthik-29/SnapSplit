@@ -2,17 +2,23 @@ import React, { createContext, useContext, useMemo, useState } from 'react';
 import { BillItem } from '../receipt/models';
 import { buildDefaultClaim } from '../bill/claims';
 import { calculateBillResults } from '../bill/settlement';
-import { BillState, ItemClaim, Participant } from '../bill/models';
+import { BillDiscount, BillState, ItemClaim, Participant } from '../bill/models';
+
+type RestorableState = Pick<
+  BillState,
+  'receiptItems' | 'receiptSubtotal' | 'receiptTotal' | 'discount' | 'participants' | 'itemClaims'
+>;
 
 export type AppContextValue = {
   state: BillState;
   addParticipant: (name: string, id?: string) => void;
   removeParticipant: (participantId: string) => void;
   setParticipants: (participants: Participant[]) => void;
-  restoreState: (state: Pick<BillState, 'receiptItems' | 'receiptSubtotal' | 'receiptTotal' | 'participants' | 'itemClaims'>) => void;
+  restoreState: (state: RestorableState) => void;
   updateBillItem: (item: BillItem) => void;
   setBillItems: (items: BillItem[], receiptTotals?: { subtotal?: number; total?: number }) => void;
   updateReceiptTotals: (totals: { subtotal?: number; total?: number }) => void;
+  updateDiscount: (discount: BillDiscount | undefined) => void;
   addBillItem: () => void;
   removeBillItem: (itemId: string) => void;
   updateItemClaim: (claim: ItemClaim) => void;
@@ -33,6 +39,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [itemClaims, setItemClaims] = useState<ItemClaim[]>(initialClaims);
   const [receiptSubtotal, setReceiptSubtotal] = useState<number | undefined>(undefined);
   const [receiptTotal, setReceiptTotal] = useState<number | undefined>(undefined);
+  const [discount, setDiscount] = useState<BillDiscount | undefined>(undefined);
 
   const addParticipant = (name: string, idOverride?: string) => {
     const id = idOverride ?? `user-${Date.now()}`;
@@ -60,10 +67,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   };
 
-  const restoreState = (nextState: Pick<BillState, 'receiptItems' | 'receiptSubtotal' | 'receiptTotal' | 'participants' | 'itemClaims'>) => {
+  const restoreState = (nextState: RestorableState) => {
     setItems(nextState.receiptItems);
     setReceiptSubtotal(nextState.receiptSubtotal);
     setReceiptTotal(nextState.receiptTotal);
+    setDiscount(nextState.discount);
     setParticipantsState(nextState.participants);
     setItemClaims(nextState.itemClaims);
   };
@@ -105,6 +113,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setReceiptTotal(totals.total);
   };
 
+  // A cleared or zero/negative discount is stored as `undefined` so the rest of
+  // the app has a single "no discount" representation to check against.
+  const updateDiscount = (nextDiscount: BillDiscount | undefined) => {
+    setDiscount(nextDiscount && nextDiscount.value > 0 ? nextDiscount : undefined);
+  };
+
   const addBillItem = () => {
     const id = `item-${Date.now()}`;
     const nextItem: BillItem = {
@@ -131,12 +145,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const calculationResult = useMemo(
-    () => calculateBillResults(items, participants, itemClaims, { subtotal: receiptSubtotal, total: receiptTotal }),
-    [items, participants, itemClaims, receiptSubtotal, receiptTotal]
+    () => calculateBillResults(items, participants, itemClaims, { subtotal: receiptSubtotal, total: receiptTotal }, discount),
+    [items, participants, itemClaims, receiptSubtotal, receiptTotal, discount]
   );
 
   const value = {
-    state: { receiptItems: items, receiptSubtotal, receiptTotal, participants, itemClaims },
+    state: { receiptItems: items, receiptSubtotal, receiptTotal, discount, participants, itemClaims },
     addParticipant,
     removeParticipant,
     setParticipants,
@@ -144,6 +158,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     updateBillItem,
     setBillItems,
     updateReceiptTotals,
+    updateDiscount,
     addBillItem,
     removeBillItem,
     updateItemClaim,

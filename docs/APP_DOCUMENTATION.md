@@ -69,7 +69,7 @@ The party screen appears before receipt upload. Each user must select the shared
 
 **Role gates Upload.** Creating a party sets `role: 'owner'`; joining an existing one sets `role: 'participant'` (see `Party` in [party.ts](../src/google/party.ts)). Only an owner sees the Upload link and lands on the upload screen at `/`; a participant lands on Review instead, since the owner's receipt already exists there and a participant re-uploading would silently overwrite the shared bill via `PartySync`. This is a client-side UI hint only — it is never written to the Sheet, and Drive/Sheets sharing permissions remain the actual access control.
 
-The Review step is where the user corrects OCR mistakes: item names, quantities, and unit prices are editable inline, and the receipt's own subtotal/total are now also directly editable (see §8, `checkItemsAgainstReceiptTotal`) rather than being a fixed, un-correctable value carried over from OCR.
+The Review step is where the user corrects OCR mistakes: item names, quantities, and unit prices are editable inline, and the receipt's own subtotal/total are now also directly editable (see §8, `checkItemsAgainstReceiptTotal`) rather than being a fixed, un-correctable value carried over from OCR. Review also holds the **whole-bill discount** field (a flat ₹ amount or a percentage of the subtotal), which is distributed across participants in proportion to their share (see §11).
 
 ## 3. State Model
 
@@ -80,6 +80,7 @@ type BillState = {
   receiptItems: BillItem[];
   receiptSubtotal?: number;
   receiptTotal?: number;
+  discount?: BillDiscount;
   participants: Participant[];
   itemClaims: ItemClaim[];
 };
@@ -90,7 +91,8 @@ Important domain types:
 - `BillItem`: one receipt line item with `id`, `name`, `quantity`, `unitPrice`, and `totalPrice`.
 - `Participant`: one person in the bill with `id` and `name`.
 - `ItemClaim`: how an item is assigned, either individually by quantity or shared equally among selected participants.
-- `BillCalculationResult`: calculated totals, tax, participant summaries, and settlement lines.
+- `BillDiscount`: a whole-bill discount — `{ type: 'amount' | 'percent'; value: number }`. `amount` is a flat value in major units; `percent` is a percentage of the receipt subtotal. Edited on the Review screen; distributed across participants in proportion to their pre-discount share (see §11).
+- `BillCalculationResult`: calculated totals, tax, the applied `discount` amount, participant summaries, and settlement lines.
 
 ## 4. Google Sheet Data Model
 
@@ -109,7 +111,11 @@ The current schema version is `1`, stored in `META` as:
 schema_version | 1
 currency       | INR
 created_at     | ISO timestamp
+discount_type  | amount | percent | (blank)
+discount_value | number | (blank)
 ```
+
+`discount_type` / `discount_value` hold the whole-bill discount. They are written by `syncParty` and read back by `loadParty` (via `parseDiscount`); a blank value, missing rows, or an unrecognised type all read back as "no discount". Adding these keys did **not** bump the schema version — `META` is key/value and older parties simply lack the rows. `receiptSubtotal` / `receiptTotal` remain un-persisted (see §12).
 
 The spreadsheet ID comes from a Google Sheets URL like:
 
@@ -207,11 +213,12 @@ src/
       receiptParser.ts         The real parser: parseReceipt(OCRResult) -> ParsedBill
 
   bill/
-    models.ts                Bill, participant, claim, settlement types; BillCalculationResult.itemsNeedingReview
+    models.ts                Bill, participant, claim, settlement, discount types; BillCalculationResult.itemsNeedingReview
     claims.ts                Claim helpers and default claim construction
-    splitting.ts             Item splitting helpers, including capIndividualQuantities (over-claim capping)
-    settlement.ts            Per-participant bill calculation; flags over-claimed items for review
+    splitting.ts             Item splitting helpers: capIndividualQuantities (over-claim capping), distributeProportionally (tax/discount)
+    settlement.ts            Per-participant bill calculation; proportional tax + whole-bill discount; flags over-claimed items
     reconciliation.ts        checkItemsAgainstReceiptTotal: live items-vs-receipt-total + totalBelowSubtotal check for Review
+    review.ts                runReviewChecks: pass/warn/fail arithmetic sanity checks for the Settlement screen
 
   routes/
     PartyPage.tsx            Create/join/refresh party screen
@@ -226,14 +233,14 @@ src/
     Logo.tsx                 SnapSplit mark: inline SVG, drawn in currentColor (see §16)
     PartySync.tsx            Debounced autosync from AppContext to Google Sheet
     ReceiptUpload.tsx        Upload image, run inferReceiptBill, convert via toLegacyReceipt
-    ReceiptReview.tsx        Edit parsed items and receipt subtotal/total; shows live mismatch and totalBelowSubtotal warnings
+    ReceiptReview.tsx        Edit parsed items, receipt subtotal/total, and the whole-bill discount (₹/%); live mismatch + totalBelowSubtotal warnings
     Participants.tsx         Add/remove people
     ItemClaim.tsx            Individual/shared item claiming UI
-    Settlement.tsx           Show calculated participant shares; warns when itemsNeedingReview is non-empty
+    Settlement.tsx           Show calculated participant shares (with discount row) and the runReviewChecks pass/warn/fail list
     SheetExport.tsx          Show current Google Sheet party connection
 
   tests/
-    *.test.ts                Unit tests for parsing, claims, splitting, settlement, reconciliation
+    *.test.ts                Unit tests for parsing, claims, splitting, settlement, reconciliation, review
     receipt/
       parsing/               Number parsing, section classification, item/quantity/total edge cases
       layout/                Line reconstruction and column detection
@@ -315,16 +322,22 @@ Reads a SnapSplit Sheet and reconstructs `BillState`:
 - Validates `META.schema_version` is `1`.
 - Reads `USERS`, `ITEMS`, and `CLAIMS`.
 - Converts Sheet rows into participants, receipt items, and item claims.
+- Reconstructs the whole-bill discount from `META.discount_type` / `discount_value` via `parseDiscount` (blank/missing/unrecognised → no discount).
 - Returns `Omit<Party, 'role'>` — the Sheet has no concept of role, so the caller (`PartyPage`, based on whether it called this after create or join) attaches `role` itself.
 
 `syncParty(token, party)`
 
 Writes current app state to the remote Google Sheet:
 
+- Upserts the `discount_type` / `discount_value` rows into `META` (only these two keys — `schema_version`, `currency`, `created_at` are untouched).
 - Upserts participant rows into `USERS`.
 - Upserts item rows into `ITEMS`.
 - Upserts claim rows into `CLAIMS`.
 - Uses row keys so unchanged rows are skipped.
+
+`parseDiscount(meta)`
+
+Pulls `discount_type` / `discount_value` out of the `META` rows and returns a `BillDiscount` only when the type is `amount` or `percent` and the value is a finite number greater than 0; otherwise `undefined`.
 
 `syncRows(token, id, sheet, keyIndexes, desired)`
 
@@ -384,6 +397,10 @@ Replaces receipt items after OCR/parse or another bulk load. Existing matching c
 
 Updates `receiptSubtotal`/`receiptTotal` independently of the item list. Unlike `setBillItems` (called once, at OCR time), this is what lets the Review screen correct a total OCR got wrong or never found — each field can be edited without clobbering the other.
 
+`updateDiscount(discount)`
+
+Sets or clears the whole-bill discount. A cleared, zero, or negative discount is normalised to `undefined` so the rest of the app has one "no discount" representation. Edited from the Review screen's Discount field.
+
 `addBillItem()`
 
 Creates a new manual receipt item and a default individual claim for it.
@@ -398,7 +415,7 @@ Replaces the claim for one item.
 
 `calculationResult`
 
-Memoized result from `calculateBillResults`, recomputed whenever items, participants, claims, subtotal, or total change.
+Memoized result from `calculateBillResults`, recomputed whenever items, participants, claims, subtotal, total, or discount change.
 
 ### `src/context/AuthContext.tsx`
 
@@ -568,9 +585,13 @@ Multiplies each participant's claimed quantity by the item unit price. Calls `ca
 
 If the claimed quantities sum to more than `item.quantity` — e.g. the item's quantity was edited down in Review after claims already existed — proportionally scales every participant's claimed quantity down to fit, using the same `Math.floor` base-share-plus-remainder rule as `splitSharedItemEvenly`, so the scaled quantities sum exactly to `item.quantity`. This is a **calculation-time view only**: the stored `ItemClaim` is never mutated, since silently rewriting what a specific participant is recorded as having claimed would be worse than a visibly-flagged discrepancy (see `itemsNeedingReview` below). Returns `claimQuantities` unchanged when there's no over-claim.
 
+`distributeProportionally(pool, weightById, orderedIds, totalWeight)`
+
+Splits `pool` across `orderedIds` in proportion to each id's weight, rounding each share to 2 decimals and pushing the leftover rounding remainder onto the **last** id so the parts sum back to `pool` exactly. `totalWeight` is passed explicitly rather than summed from `weightById`, because tax and discount are both allocated against the item subtotal, which is not necessarily the sum of the per-participant shares. Returns `{}` for a non-positive pool or zero total weight. Used for both the proportional tax and the proportional discount in `calculateBillResults`.
+
 ### `src/bill/settlement.ts`
 
-`calculateBillResults(items, participants, itemClaims, receiptTotals?)`
+`calculateBillResults(items, participants, itemClaims, receiptTotals?, discount?)`
 
 Calculates the bill summary:
 
@@ -581,10 +602,28 @@ Calculates the bill summary:
 - Computes item subtotal.
 - Uses receipt subtotal and total when available.
 - Treats `total - subtotal` as tax/extra charges when positive.
-- Allocates tax proportionally to each participant's item share.
-- Returns participant summaries; `sum(participantSummaries.share)` always equals the item's real total even when a stored claim is over-quantity, since the cap applies before shares are computed.
+- Allocates tax proportionally to each participant's item share (via `distributeProportionally`).
+- Resolves the optional whole-bill `discount` to a rupee figure — `resolveDiscountAmount`: a percentage is taken off the receipt subtotal (which itself falls back to the item subtotal), negatives are ignored, and the result is capped at what participants collectively owe (base + tax) so the bill can never go below zero. That amount is then allocated by the **same** pre-tax item-share ratios as tax and subtracted from each participant's share. It is returned as `BillCalculationResult.discount`, and `totalBill = preDiscountTotal - discount`.
+- Returns participant summaries; `sum(participantSummaries.share)` always equals `totalBill` — the tax and discount pools are each distributed with the rounding remainder absorbed on the last participant, and over-quantity claims are capped before shares are computed.
 
 `settlements` is currently returned as an empty array. The app shows participant shares, but it does not yet compute payment transfer recommendations.
+
+### `src/bill/review.ts`
+
+`runReviewChecks({ result, items, receiptSubtotal?, receiptTotal?, discount?, participantCount })`
+
+Pure function (mirrors `reconciliation.ts`) that runs a set of arithmetic sanity checks over a finished `BillCalculationResult` for the Settlement ("final review") screen. Returns one `ReviewCheck` (`{ id, label, status: 'pass' | 'warn' | 'fail', detail? }`) per invariant:
+
+| id | fails / warns when |
+| --- | --- |
+| `shares-add-up` | **fail** — `sum(shares)` is more than ₹0.01 off `totalBill` |
+| `no-negative-shares` | **fail** — any participant share is below 0 |
+| `has-participants` | **fail** — the bill has no participants |
+| `discount-in-full` | **warn** — a discount is set but was capped below the requested amount (only emitted when a discount is set) |
+| `items-match-receipt` | **warn** — `checkItemsAgainstReceiptTotal` reports a mismatch or `totalBelowSubtotal` |
+| `no-over-claimed-items` | **warn** — `result.itemsNeedingReview` is non-empty |
+
+`fail` means the numbers genuinely don't reconcile; `warn` means the split still adds up but something upstream is worth a second look. Rendered as a pass/warn/fail list under a **Checks** heading in `Settlement.tsx`.
 
 ### `src/bill/reconciliation.ts`
 
@@ -592,7 +631,7 @@ Calculates the bill summary:
 
 Used by `ReceiptReview.tsx` to answer "does the total add up?" live, as the user edits. Compares `sum(item.totalPrice)` against the receipt's subtotal (preferred) or total (fallback) — comparing against subtotal alone is sufficient to also cover tax, since `settlement.ts` already derives `tax = total - subtotal`, so `items + tax ≈ total` reduces to `items ≈ subtotal`. Returns `'match' | 'mismatch' | 'insufficient_data'`; a mismatch is surfaced as a visible warning in Review, never used to silently alter item or receipt values.
 
-Also returns `totalBelowSubtotal: boolean` — true whenever both subtotal and total are known and total is less than subtotal. This is a directional plausibility check independent of the match/mismatch status above: a payable total can never be lower than the pre-tax subtotal it was built from, so this fires even when the items-vs-subtotal comparison would otherwise stay quiet, and is rendered as its own, separately-worded warning in `ReceiptReview.tsx`.
+Also returns `totalBelowSubtotal: boolean` — true whenever both subtotal and total are known and total is less than subtotal. This is a directional plausibility check independent of the match/mismatch status above: a payable total can never be lower than the pre-tax subtotal it was built from, so this fires even when the items-vs-subtotal comparison would otherwise stay quiet, and is rendered as its own, separately-worded warning in `ReceiptReview.tsx`. It is also folded into the `items-match-receipt` check on the Settlement screen (see `src/bill/review.ts`).
 
 ## 9. Detailed Data Flow
 
@@ -696,18 +735,25 @@ For each item:
 - If receipt total is greater than receipt subtotal, the difference is treated as tax/extra charge.
 - Tax is allocated proportionally based on pre-tax participant shares.
 
-Example:
+Whole-bill discount:
+
+- The discount (`BillDiscount`) is resolved to a rupee amount: `percent` is taken off the receipt subtotal (falling back to the item subtotal); `amount` is used as-is.
+- It is capped at what participants collectively owe (base + tax), so `totalBill` can never go below 0.
+- It is then split by the **same pre-tax item-share ratios as tax** and subtracted from each participant's share. The rounding remainder lands on the last participant, so shares still sum exactly to `totalBill = preDiscountTotal - discount`.
+
+Example (with tax and a percentage discount):
 
 ```text
-Item subtotal: INR 900
-Receipt total: INR 990
-Tax/extra: INR 90
+Item subtotal: INR 600
+Receipt total: INR 660        -> Tax/extra: INR 60
+Discount: 10% of subtotal     -> INR 60
 
-Participant A item share: INR 300
-Participant B item share: INR 600
+Base item shares:  A 260   B 260   C 80
+Tax shares (x/600 x 60):      A 26    B 26    C 8
+Discount shares (x/600 x 60): A 26    B 26    C 8
 
-A tax share: INR 30
-B tax share: INR 60
+Final shares:  A 260   B 260   C 80
+Total bill: 660 - 60 = INR 600   (= sum of final shares)
 ```
 
 ## 12. Persistence Behavior
@@ -719,12 +765,14 @@ What is saved:
 - Participants
 - Receipt items
 - Item claims
+- Whole-bill discount (`META.discount_type` / `discount_value`)
 
 What is loaded:
 
 - Participants
 - Receipt items
 - Item claims
+- Whole-bill discount
 
 Current important limitation:
 
@@ -765,8 +813,9 @@ GOOGLE_PROJECT_NUMBER: Cloud project number used as Picker app ID
 The project uses Vitest, run once (`vitest run`) rather than watch mode by default. Bill/claims logic:
 
 - `src/tests/parser.test.ts` — legacy adapter, including a real captured OCR fixture
-- `src/tests/claims.test.ts`, `src/tests/splitting.test.ts`
-- `src/tests/settlement.test.ts` — including an over-claimed-then-quantity-reduced scenario asserting `sum(participantSummaries.share) === item.totalPrice` and that `itemsNeedingReview` names the affected item, without the stored claim itself ever changing
+- `src/tests/claims.test.ts`, `src/tests/splitting.test.ts` — the latter also covers `distributeProportionally` (weighted split, remainder on the last id, empty-map edge cases)
+- `src/tests/settlement.test.ts` — including an over-claimed-then-quantity-reduced scenario asserting `sum(participantSummaries.share) === item.totalPrice` and that `itemsNeedingReview` names the affected item, without the stored claim itself ever changing; plus whole-bill discount cases (flat and percentage allocation, clamp to amount owed with no negative shares, rounding-remainder sum invariant, no-op when unset)
+- `src/tests/review.test.ts` — one case per `runReviewChecks` check: clean bill all-pass, shares-don't-sum fail, negative-share fail, no-participants fail, discount-capped warn / applied-in-full pass / omitted-when-unset, items-vs-receipt mismatch warn, over-claimed warn
 - `src/tests/reconciliation.test.ts` — `checkItemsAgainstReceiptTotal` synthetic cases, `totalBelowSubtotal` cases, and an integration suite running the real parser end-to-end (`toLegacyReceipt(parseReceipt(...))`) against all four real captured receipts
 
 Receipt pipeline (`src/tests/receipt/`):
@@ -810,6 +859,7 @@ These are not bugs in this document; they are the current implementation boundar
 - A dropped/hallucinated decimal point on a printed total is only detectable when a row has an independently-read rate to cross-validate against (3+ numeric values). A 2-value row (quantity + total only, no separate rate) has no second number to check it against, so this class of OCR error is only caught, if at all, by the bill-level items-vs-subtotal mismatch check in Review, not row-locally.
 - The OCR pipeline's own `ParsedBill.reconciliation` (whether the receipt's *printed* summary section is internally consistent) is computed but not surfaced in the UI — only the live items-vs-subtotal/total check added to Review (`checkItemsAgainstReceiptTotal`, recomputed as the user edits) is currently shown to the user.
 - If a receipt's total is genuinely never known (only subtotal, or neither), `calculateBillResults` derives tax as `total - subtotal`, which silently becomes `0` rather than "unknown" in that case — pre-existing behavior, more likely to surface now that totals are directly editable in Review.
+- The whole-bill discount reduces `totalBill` directly (`totalBill = preDiscountTotal - discount`) and is independent of the `total - subtotal` tax derivation: a percentage discount always resolves against `receiptSubtotal ?? itemSubTotal`, so if the scanned receipt already had its own printed discount baked into the total, entering it again here would double-count. The Discount field is for a reduction the group is applying on top of the receipt, not for transcribing a discount line already on it.
 - Google sign-in now always shows the account chooser (`prompt: 'select_account'`), but the resulting token is cached for the lifetime of the page load (`AuthContext`) — there's no "switch account" affordance short of a full reload or `signOut()` (which itself isn't wired into any UI yet).
 
 The most valuable next hardening work would be to persist subtotal/total in `META` or a dedicated totals tab, add stale-row deletion, add tests for the Google Sheet adapter, and wire quadrilateral detection into the image pipeline so perspective correction stops being dead code.

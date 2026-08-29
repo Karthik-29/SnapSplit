@@ -444,6 +444,73 @@ p.field-error {
   padding: 10px 12px;
 }
 
+.field-hint {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.receipt-totals .field-hint {
+  flex-basis: 100%;
+}
+
+.discount-input {
+  display: flex;
+  gap: 6px;
+}
+
+.discount-input select {
+  flex: 0 0 auto;
+}
+
+.discount-input input {
+  width: 90px;
+}
+
+/* ----- Review checks --------------------------------------------- */
+
+.review-checks {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.9rem;
+}
+
+.review-checks li {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.review-checks-icon {
+  font-weight: 700;
+  flex: 0 0 auto;
+}
+
+.review-checks li.pass {
+  color: var(--accent);
+}
+
+.review-checks li.warn {
+  color: #a15c00;
+}
+
+.review-checks li.fail {
+  color: var(--danger);
+}
+
+.review-checks-detail {
+  color: var(--text-muted);
+}
+
+@media (prefers-color-scheme: dark) {
+  .review-checks li.warn {
+    color: #f2b45c;
+  }
+}
+
 /* ----- Inline code ----------------------------------------------- */
 
 code {

@@ -1,10 +1,18 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { checkItemsAgainstReceiptTotal } from '../bill/reconciliation';
+import { BillDiscount } from '../bill/models';
 
 function ReceiptReview() {
-  const { state, updateBillItem, updateReceiptTotals, addBillItem, removeBillItem } = useAppContext();
+  const { state, updateBillItem, updateReceiptTotals, updateDiscount, addBillItem, removeBillItem, calculationResult } =
+    useAppContext();
+
+  // The ₹/% choice is kept locally so the toggle still reflects the user's pick
+  // before they've typed a value (a value-less discount isn't stored in state).
+  const [discountType, setDiscountType] = useState<BillDiscount['type']>(state.discount?.type ?? 'amount');
+  const discountValue = state.discount?.value;
+  const appliedDiscount = calculationResult.discount ?? 0;
 
   const reconciliation = useMemo(
     () => checkItemsAgainstReceiptTotal(state.receiptItems, state.receiptSubtotal, state.receiptTotal),
@@ -57,6 +65,25 @@ function ReceiptReview() {
       subtotal: state.receiptSubtotal,
       total: value.trim() === '' ? undefined : Math.max(0, parseFloat(value) || 0),
     });
+  };
+
+  // A discount on the whole bill: a flat amount or a percentage of the
+  // subtotal. It is shared out across participants in proportion to their
+  // pre-discount share (see calculateBillResults) and nets out of the total.
+  const handleDiscountTypeChange = (value: string) => {
+    const type = value === 'percent' ? 'percent' : 'amount';
+    setDiscountType(type);
+    if (discountValue !== undefined) {
+      updateDiscount({ type, value: discountValue });
+    }
+  };
+
+  const handleDiscountValueChange = (value: string) => {
+    if (value.trim() === '') {
+      updateDiscount(undefined);
+      return;
+    }
+    updateDiscount({ type: discountType, value: Math.max(0, parseFloat(value) || 0) });
   };
 
   return (
@@ -134,6 +161,29 @@ function ReceiptReview() {
               onChange={(event) => handleTotalChange(event.target.value)}
             />
           </label>
+          <label>
+            Discount
+            <span className="discount-input">
+              <select value={discountType} onChange={(event) => handleDiscountTypeChange(event.target.value)}>
+                <option value="amount">₹ off</option>
+                <option value="percent">% off</option>
+              </select>
+              <input
+                type="number"
+                min="0"
+                max={discountType === 'percent' ? 100 : undefined}
+                placeholder="0"
+                value={discountValue ?? ''}
+                onChange={(event) => handleDiscountValueChange(event.target.value)}
+              />
+            </span>
+          </label>
+          {appliedDiscount > 0 && (
+            <p className="field-hint">
+              Discount of ₹{appliedDiscount.toFixed(2)} applied — total after discount ₹
+              {calculationResult.totalBill.toFixed(2)}, split across participants by their share.
+            </p>
+          )}
           {reconciliation.status === 'mismatch' && (
             <p className="field-error">
               Items total (₹{reconciliation.itemSum.toFixed(2)}) differs from the receipt {reconciliation.referenceLabel} (₹
