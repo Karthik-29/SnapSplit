@@ -233,7 +233,8 @@ input::placeholder {
   color: var(--text-muted);
 }
 
-.receipt-table input[type='number'] {
+.receipt-table input[type='number'],
+.receipt-table input.item-price {
   max-width: 88px;
 }
 

@@ -31,15 +31,32 @@ function ReceiptReview() {
     });
   };
 
+  // The unit price is a free-text field so people can type decimals like
+  // "12.50" naturally. While a row is being edited we keep the raw string in
+  // priceDrafts so a half-typed "12." isn't snapped back to "12"; on blur we
+  // drop the draft and fall back to the parsed number in state.
+  const [priceDrafts, setPriceDrafts] = useState<Record<string, string>>({});
+
   const handleUnitPriceChange = (itemId: string, value: string) => {
-    const unitPrice = Math.max(0, parseInt(value, 10) || 0);
+    // Allow only digits with an optional single decimal point while typing.
+    if (value !== '' && !/^\d*\.?\d*$/.test(value)) return;
+    setPriceDrafts((drafts) => ({ ...drafts, [itemId]: value }));
+
     const item = state.receiptItems.find((entry) => entry.id === itemId);
     if (!item) return;
 
+    const unitPrice = Math.max(0, parseFloat(value) || 0);
     updateBillItem({
       ...item,
       unitPrice,
       totalPrice: item.quantity * unitPrice,
+    });
+  };
+
+  const handleUnitPriceBlur = (itemId: string) => {
+    setPriceDrafts((drafts) => {
+      const { [itemId]: _removed, ...rest } = drafts;
+      return rest;
     });
   };
 
@@ -122,10 +139,12 @@ function ReceiptReview() {
                 </td>
                 <td>
                   <input
-                    type="number"
-                    min="0"
-                    value={item.unitPrice}
+                    className="item-price"
+                    type="text"
+                    inputMode="decimal"
+                    value={priceDrafts[item.id] ?? String(item.unitPrice)}
                     onChange={(event) => handleUnitPriceChange(item.id, event.target.value)}
+                    onBlur={() => handleUnitPriceBlur(item.id)}
                   />
                 </td>
                 <td>{item.totalPrice.toFixed(2)}</td>
