@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { realReceiptOCR } from '../receipt/ocr';
-import { parseReceiptData } from '../receipt/parser';
+import { inferReceiptBill } from '../receipt/pipeline';
+import { toLegacyReceipt } from '../receipt/parser';
 import { BillItem } from '../receipt/models';
 
 function ReceiptUpload() {
@@ -33,13 +34,15 @@ function ReceiptUpload() {
     setLoading(true);
 
     try {
-      const ocrResult = await realReceiptOCR.extract(file);
-      const parsedReceipt = parseReceiptData(ocrResult);
+      const parsedBill = await inferReceiptBill(file, realReceiptOCR);
+      const parsedReceipt = toLegacyReceipt(parsedBill);
       setParsedItemCount(parsedReceipt.items.length);
       applyParsedItems(parsedReceipt.items, { subtotal: parsedReceipt.subtotal, total: parsedReceipt.total });
     } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('Receipt parsing failed:', err);
       setParsedItemCount(0);
-      setError('Failed to parse receipt.');
+      setError(`Failed to parse receipt: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setLoading(false);
     }

@@ -9,13 +9,24 @@ function ItemClaim() {
   const handleModeChange = (itemId: string, mode: 'individual' | 'shared') => {
     const claim = state.itemClaims.find((entry) => entry.itemId === itemId);
     if (!claim) return;
-    updateItemClaim({ ...claim, mode });
+    // Preserve a row for every previous shared participant when returning to
+    // individual claims, so the Sheets repository can update that same claim.
+    const individualQuantities = mode === 'individual'
+      ? { ...claim.individualQuantities, ...Object.fromEntries(claim.sharedWith.map((id) => [id, 0])) }
+      : claim.individualQuantities;
+    updateItemClaim({ ...claim, mode, individualQuantities });
   };
 
   const handleQuantityChange = (itemId: string, participantId: string, value: string) => {
     const claim = state.itemClaims.find((entry) => entry.itemId === itemId);
     if (!claim) return;
-    const quantity = Math.max(0, parseInt(value, 10) || 0);
+    const item = state.receiptItems.find((entry) => entry.id === itemId);
+    if (!item) return;
+    const requestedQuantity = Math.max(0, parseInt(value, 10) || 0);
+    const claimedByOthers = Object.entries(claim.individualQuantities)
+      .filter(([id]) => id !== participantId)
+      .reduce((sum, [, claimed]) => sum + claimed, 0);
+    const quantity = Math.min(requestedQuantity, Math.max(0, item.quantity - claimedByOthers));
     updateItemClaim({
       ...claim,
       individualQuantities: {
@@ -58,7 +69,7 @@ function ItemClaim() {
                 <div>
                   <strong>{item.name}</strong>
                   <div>
-                    Qty: {item.quantity} · Total: ₹{item.totalPrice}
+                    Qty: {item.quantity} · Total: ₹{item.totalPrice.toFixed(2)}
                   </div>
                 </div>
                 <div className="claim-mode-toggle">
@@ -102,7 +113,7 @@ function ItemClaim() {
                             onChange={(event) => handleQuantityChange(item.id, participant.id, event.target.value)}
                           />
                         </td>
-                        <td>₹{(claim.individualQuantities[participant.id] ?? 0) * item.unitPrice}</td>
+                        <td>₹{((claim.individualQuantities[participant.id] ?? 0) * item.unitPrice).toFixed(2)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -138,7 +149,7 @@ function ItemClaim() {
                           return (
                             <tr key={participantId}>
                               <td>{participant?.name ?? participantId}</td>
-                              <td>₹{sharedSplit[participantId] ?? 0}</td>
+                              <td>₹{(sharedSplit[participantId] ?? 0).toFixed(2)}</td>
                             </tr>
                           );
                         })}

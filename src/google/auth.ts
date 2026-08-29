@@ -1,55 +1,23 @@
-export type GoogleUser = {
-  id: string;
-  name: string;
-  email?: string;
-  avatarUrl?: string;
-};
-
-export type GoogleAuthState = {
-  accessToken: string | null;
-  expiresAt: number | null;
-  user: GoogleUser | null;
-};
-
-export const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
-export const isGoogleAuthConfigured = Boolean(GOOGLE_CLIENT_ID);
-const GOOGLE_SCOPES = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.metadata https://www.googleapis.com/auth/spreadsheets';
+// OAuth client IDs are public browser configuration; no client secret belongs
+// in this browser application.
+export const GOOGLE_CLIENT_ID = '329604023752-6li8g2humkk0pnqcf8lhd4nnosgooj4l.apps.googleusercontent.com';
+export const GOOGLE_PICKER_API_KEY = 'AIzaSyAh1Z7RdAe4nYM6mmnc7C3LCNQfuiuKZWg';
+const GOOGLE_PROJECT_NUMBER = '329604023752';
+const GOOGLE_SCOPES = 'https://www.googleapis.com/auth/drive.file';
 
 let gsiLoaded = false;
-let idInitialized = false;
+let pickerLoaded = false;
 let oauthClient: google.accounts.oauth2.TokenClient | null = null;
-let signInResolver: ((user: GoogleUser) => void) | null = null;
-let signInRejecter: ((reason?: any) => void) | null = null;
-
-function parseJwt(jwt: string): Record<string, any> {
-  const payload = jwt.split('.')[1];
-  const decoded = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
-  return JSON.parse(decodeURIComponent(decoded.split('').map((c) => `%${('00' + c.charCodeAt(0).toString(16)).slice(-2)}`).join('')));
-}
 
 declare global {
   interface Window {
     google?: typeof google;
+    gapi?: { load: (library: string, callback: () => void) => void };
   }
 }
 
 declare namespace google {
   namespace accounts {
-    namespace id {
-      interface CredentialResponse {
-        credential: string;
-        select_by: string;
-        clientId: string;
-      }
-      interface IdConfiguration {
-        client_id: string;
-        callback: (response: CredentialResponse) => void;
-        auto_select?: boolean;
-        cancel_on_tap_outside?: boolean;
-      }
-      function initialize(config: IdConfiguration): void;
-      function prompt(): void;
-    }
     namespace oauth2 {
       interface TokenResponse {
         access_token?: string;
@@ -68,12 +36,26 @@ declare namespace google {
       function revoke(token: string, callback: () => void): void;
     }
   }
+  // The Picker lives at google.picker, a sibling of google.accounts — not
+  // beneath it, which is where this declaration used to sit.
+  namespace picker {
+    const ViewId: { SPREADSHEETS: string };
+    const Action: { PICKED: string; CANCEL: string };
+    const Response: { DOCUMENTS: string };
+    const Document: { ID: string };
+    class PickerBuilder {
+      addView(view: string): PickerBuilder;
+      setOAuthToken(token: string): PickerBuilder;
+      setDeveloperKey(key: string): PickerBuilder;
+      setAppId(appId: string): PickerBuilder;
+      setCallback(callback: (data: any) => void): PickerBuilder;
+      build(): { setVisible(visible: boolean): void };
+    }
+  }
 }
 
 function loadGoogleScript(): Promise<void> {
-  if (gsiLoaded) {
-    return Promise.resolve();
-  }
+  if (gsiLoaded) return Promise.resolve();
 
   return new Promise((resolve, reject) => {
     const script = document.createElement('script');
@@ -89,51 +71,7 @@ function loadGoogleScript(): Promise<void> {
   });
 }
 
-async function ensureIdClient() {
-  if (!GOOGLE_CLIENT_ID) {
-    throw new Error('Missing VITE_GOOGLE_CLIENT_ID environment variable. Configure the Google OAuth client ID in your Vite env settings.');
-  }
-
-  await loadGoogleScript();
-  if (idInitialized) {
-    return;
-  }
-
-  if (!window.google?.accounts?.id) {
-    throw new Error('Google Identity Services is unavailable');
-  }
-
-  window.google.accounts.id.initialize({
-    client_id: GOOGLE_CLIENT_ID,
-    callback: (response) => {
-      if (!response.credential) {
-        signInRejecter?.(new Error('Google sign in failed')); 
-        signInResolver = null;
-        signInRejecter = null;
-        return;
-      }
-      const payload = parseJwt(response.credential);
-      const user: GoogleUser = {
-        id: payload.sub,
-        name: payload.name || 'Google User',
-        email: payload.email,
-        avatarUrl: payload.picture,
-      };
-      signInResolver?.(user);
-      signInResolver = null;
-      signInRejecter = null;
-    },
-    auto_select: false,
-    cancel_on_tap_outside: true,
-  });
-  idInitialized = true;
-}
-
 async function ensureOAuthClient() {
-  if (!GOOGLE_CLIENT_ID) {
-    throw new Error('Missing VITE_GOOGLE_CLIENT_ID environment variable. Configure the Google OAuth client ID in your Vite env settings.');
-  }
-
   await loadGoogleScript();
   if (!window.google?.accounts?.oauth2) {
     throw new Error('Google Identity Services is unavailable');
@@ -150,37 +88,84 @@ async function ensureOAuthClient() {
   return oauthClient;
 }
 
-export async function requestGoogleSignIn(): Promise<GoogleUser> {
-  await ensureIdClient();
+async function ensurePicker() {
+  if (pickerLoaded) return;
+  await new Promise<void>((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = 'https://apis.google.com/js/api.js';
+    script.async = true;
+    script.defer = true;
+    script.onload = () => window.gapi?.load('picker', () => { pickerLoaded = true; resolve(); });
+    script.onerror = () => reject(new Error('Failed to load Google Picker'));
+    document.head.appendChild(script);
+  });
+}
 
-  return new Promise((resolve, reject) => {
-    signInResolver = resolve;
-    signInRejecter = reject;
-    window.google?.accounts?.id.prompt();
+export type PickedGoogleSpreadsheet = { id: string; name: string };
+
+export async function pickGoogleSpreadsheet(token: string): Promise<PickedGoogleSpreadsheet | null> {
+  if (!GOOGLE_PICKER_API_KEY) {
+    throw new Error('Google Picker is not configured. Add a restricted Google Picker browser API key in src/google/auth.ts.');
+  }
+  await ensurePicker();
+  return new Promise((resolve) => {
+    const picker = new google.picker.PickerBuilder()
+      .addView(google.picker.ViewId.SPREADSHEETS)
+      .setOAuthToken(token)
+      .setDeveloperKey(GOOGLE_PICKER_API_KEY)
+      .setAppId(GOOGLE_PROJECT_NUMBER)
+      .setCallback((data: any) => {
+        // Picker normally exposes documents through Response.DOCUMENTS
+        // (`docs`), but keep the fallback for browser/version differences.
+        const documents = data[google.picker.Response.DOCUMENTS] ?? data.docs;
+        const document = documents?.[0];
+        const id = document?.[google.picker.Document.ID] ?? document?.id;
+        if (id) {
+          resolve({ id, name: document?.name ?? 'Google Sheet' });
+          return;
+        }
+        // Picker sends non-terminal events such as "loaded" before the user
+        // chooses a file. Only close the promise when the user cancels.
+        if (data.action === google.picker.Action.CANCEL) {
+          resolve(null);
+        }
+      })
+      .build();
+    picker.setVisible(true);
   });
 }
 
 export async function requestGoogleAccessToken(): Promise<{ accessToken: string; expiresAt: number }> {
-  const client = await ensureOAuthClient();
+  await ensureOAuthClient();
+  const oauth2 = window.google?.accounts?.oauth2;
+  if (!oauth2) {
+    throw new Error('Google Identity Services is unavailable');
+  }
 
   return new Promise((resolve, reject) => {
-    const callback = (response: google.accounts.oauth2.TokenResponse) => {
-      if (response.error || !response.access_token) {
-        reject(new Error(response.error || 'Failed to obtain access token'));
-        return;
-      }
-      resolve({
-        accessToken: response.access_token,
-        expiresAt: Date.now() + (response.expires_in ?? 3600) * 1000,
-      });
-    };
-
-    oauthClient = window.google?.accounts?.oauth2.initTokenClient({
+    // A fresh client is needed per request so this call's callback is the one
+    // that resolves; the module-level reference is kept for revocation.
+    const client = oauth2.initTokenClient({
       client_id: GOOGLE_CLIENT_ID,
       scope: GOOGLE_SCOPES,
-      callback,
+      callback: (response: google.accounts.oauth2.TokenResponse) => {
+        if (response.error || !response.access_token) {
+          reject(new Error(response.error || 'Failed to obtain access token'));
+          return;
+        }
+        resolve({
+          accessToken: response.access_token,
+          expiresAt: Date.now() + (response.expires_in ?? 3600) * 1000,
+        });
+      },
     });
-    oauthClient.requestAccessToken({ prompt: 'consent' });
+    oauthClient = client;
+    // Without an explicit prompt, Google's token client silently reuses
+    // whatever account already has a session in this browser. This app has no
+    // separate SnapSplit session — Google identity IS the identity, for both
+    // the party owner and every participant signing in independently — so
+    // reusing a stale/wrong account silently is worse than one extra click.
+    client.requestAccessToken({ prompt: 'select_account' });
   });
 }
 

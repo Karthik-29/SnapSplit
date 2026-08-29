@@ -1,62 +1,51 @@
-import { Link, Route, Routes } from 'react-router-dom';
+import { Link, NavLink, Route, Routes } from 'react-router-dom';
+import Logo from './components/Logo';
 import ReceiptUploadPage from './routes/ReceiptUploadPage';
 import ReceiptReviewPage from './routes/ReceiptReviewPage';
 import ItemClaimPage from './routes/ItemClaimPage';
 import ParticipantsPage from './routes/ParticipantsPage';
 import SettlementPage from './routes/SettlementPage';
 import SheetExportPage from './routes/SheetExportPage';
-import { JoinSessionPage } from './routes/JoinSessionPage';
-import { useAuthContext } from './context/AuthContext';
+import PartyPage from './routes/PartyPage';
+import PartySync from './components/PartySync';
+import { usePartyContext } from './context/PartyContext';
 
 function App() {
-  const { user, signIn, signOut, isConfigured, signInError, isSigningIn } = useAuthContext();
+  const { party } = usePartyContext();
 
   return (
     <div className="app-shell">
+      <PartySync />
       <header className="app-header">
         <div>
-          <h1>SnapSplit</h1>
+          <Link to="/" className="brand" aria-label="SnapSplit home">
+            <Logo size={28} />
+            <span className="wordmark">Snap<span>Split</span></span>
+          </Link>
           <nav>
-            <Link to="/">Upload</Link>
-            <Link to="/review">Review</Link>
-            <Link to="/participants">Participants</Link>
-            <Link to="/claim">Claim</Link>
-            <Link to="/settlement">Settlement</Link>
-            <Link to="/export">Export</Link>
+            {party?.role === 'owner' && <NavLink to="/" end className="nav-link">Upload</NavLink>}
+            {party && <><NavLink to="/review" className="nav-link">Review</NavLink>
+            <NavLink to="/participants" className="nav-link">Participants</NavLink>
+            <NavLink to="/claim" className="nav-link">Claim</NavLink>
+            <NavLink to="/settlement" className="nav-link">Settlement</NavLink>
+            <NavLink to="/export" className="nav-link">Export</NavLink></>}
+            <NavLink to="/party" className="nav-link">Party</NavLink>
           </nav>
-        </div>
-        <div className="auth-controls">
-          {user ? (
-            <>
-              <span>{user.name}</span>
-              <button type="button" onClick={signOut}>
-                Sign out
-              </button>
-            </>
-          ) : (
-            <>
-              <button type="button" onClick={signIn} disabled={!isConfigured || isSigningIn}>
-                {isSigningIn ? 'Signing in…' : 'Sign in with Google'}
-              </button>
-              {!isConfigured && (
-                <div className="field-error">
-                  Google auth not configured. Add VITE_GOOGLE_CLIENT_ID to .env.
-                </div>
-              )}
-              {signInError && <div className="field-error">{signInError}</div>}
-            </>
-          )}
         </div>
       </header>
       <main>
         <Routes>
-          <Route path="/" element={<ReceiptUploadPage />} />
+          {/* A participant who joined has nothing to upload — the owner's
+              receipt already exists. Landing them on Upload risks an
+              accidental re-upload that overwrites the shared bill via
+              PartySync, so they land on Review (see the bill) instead. */}
+          <Route path="/" element={!party ? <PartyPage /> : party.role === 'owner' ? <ReceiptUploadPage /> : <ReceiptReviewPage />} />
           <Route path="/review" element={<ReceiptReviewPage />} />
           <Route path="/claim" element={<ItemClaimPage />} />
           <Route path="/participants" element={<ParticipantsPage />} />
           <Route path="/settlement" element={<SettlementPage />} />
           <Route path="/export" element={<SheetExportPage />} />
-          <Route path="/s/:sessionSecret" element={<JoinSessionPage />} />
+          <Route path="/party" element={<PartyPage />} />
         </Routes>
       </main>
     </div>

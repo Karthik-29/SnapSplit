@@ -1,6 +1,7 @@
 import { BillItem } from '../receipt/models';
-import { BillCalculationResult, ItemClaim, Participant, ParticipantSummary, SettlementLine } from './models';
-import { calculateIndividualShares, splitSharedItemEvenly } from './splitting';
+import { BillCalculationResult, BillDiscount, ItemClaim, Participant, ParticipantSummary, SettlementLine } from './models';
+import { getTotalClaimedQuantity } from './claims';
+import { calculateIndividualShares, distributeProportionally, splitSharedItemEvenly } from './splitting';
 
 function sum(values: number[]): number {
   return values.reduce((total, value) => total + value, 0);
@@ -17,7 +18,8 @@ export function calculateBillResults(
   items: BillItem[],
   participants: Participant[],
   itemClaims: ItemClaim[],
-  receiptTotals?: { subtotal?: number; total?: number }
+  receiptTotals?: { subtotal?: number; total?: number },
+  discount?: BillDiscount
 ): BillCalculationResult {
   const participantIds = participants.map((participant) => participant.id);
   const shares = normalizeParticipantMap<number>(participantIds, 0);
@@ -26,6 +28,8 @@ export function calculateBillResults(
     acc[item.id] = item;
     return acc;
   }, {});
+
+  const itemsNeedingReview: Array<{ id: string; name: string }> = [];
 
   for (const claim of itemClaims) {
     const item = itemMap[claim.itemId];
@@ -39,6 +43,14 @@ export function calculateBillResults(
         shares[participantId] += split[participantId];
       }
     } else {
+      // An item's quantity can be edited down in Review after claims already
+      // exist. The stored claim is never rewritten for this — see
+      // `capIndividualQuantities` — but the discrepancy must still be visible
+      // somewhere, since a wrong-looking settlement number with no
+      // explanation is worse than a flagged one.
+      if (getTotalClaimedQuantity(claim) > item.quantity) {
+        itemsNeedingReview.push({ id: item.id, name: item.name });
+      }
       const individual = calculateIndividualShares(item, claim.individualQuantities);
       for (const [participantId, amount] of Object.entries(individual)) {
         shares[participantId] += amount;
@@ -52,28 +64,25 @@ export function calculateBillResults(
   const rawTax = receiptTotal - receiptSubtotal;
   const tax = rawTax > 0 ? Number(rawTax.toFixed(2)) : 0;
 
-  const taxShares: Record<string, number> = {};
-  if (tax > 0 && itemSubTotal > 0) {
-    let allocatedTax = 0;
-    participantIds.forEach((participantId) => {
-      const participantShare = shares[participantId] ?? 0;
-      const ratio = itemSubTotal > 0 ? participantShare / itemSubTotal : 0;
-      const shareTax = Number((ratio * tax).toFixed(2));
-      taxShares[participantId] = shareTax;
-      allocatedTax += shareTax;
-    });
+  const taxShares = distributeProportionally(tax, shares, participantIds, itemSubTotal);
 
-    const remainder = Math.round((tax - allocatedTax) * 100) / 100;
-    if (remainder !== 0) {
-      const lastId = participantIds[participantIds.length - 1];
-      taxShares[lastId] = Number(((taxShares[lastId] ?? 0) + remainder).toFixed(2));
-    }
-  }
+  // The discount is a mirror of tax: resolve it to a rupee figure, then split it
+  // by the same pre-tax item-share ratios so it nets out of `totalBill` exactly.
+  // It is clamped to what participants collectively owe (base + tax) so no
+  // individual share can be driven negative once the pool is distributed.
+  const totalOwedBeforeDiscount = participantIds.reduce(
+    (running, participantId) => running + (shares[participantId] ?? 0) + (taxShares[participantId] ?? 0),
+    0
+  );
+  const preDiscountTotal = receiptTotal > 0 ? receiptTotal : itemSubTotal;
+  const discountAmount = resolveDiscountAmount(discount, receiptSubtotal, totalOwedBeforeDiscount);
+  const discountShares = distributeProportionally(discountAmount, shares, participantIds, itemSubTotal);
 
   const participantSummaries: ParticipantSummary[] = participants.map((participant) => {
     const baseShare = shares[participant.id] ?? 0;
     const taxShare = taxShares[participant.id] ?? 0;
-    const share = Number((baseShare + taxShare).toFixed(2));
+    const discountShare = discountShares[participant.id] ?? 0;
+    const share = Number((baseShare + taxShare - discountShare).toFixed(2));
     return {
       participantId: participant.id,
       name: participant.name,
@@ -81,14 +90,37 @@ export function calculateBillResults(
     };
   });
 
-  const totalBill = receiptTotal > 0 ? receiptTotal : itemSubTotal;
+  const totalBill = Number((preDiscountTotal - discountAmount).toFixed(2));
 
   return {
     totalBill,
     subtotal: receiptSubtotal,
     total: receiptTotal,
     tax,
+    discount: discountAmount,
     participantSummaries,
     settlements: [],
+    itemsNeedingReview,
   };
+}
+
+/**
+ * Turns a `BillDiscount` into the rupee amount to actually take off the bill:
+ * percentages resolve against the receipt subtotal, negatives are ignored, and
+ * the result is capped at `maxDiscount` (what participants collectively owe) so
+ * the bill can never go below zero.
+ */
+function resolveDiscountAmount(
+  discount: BillDiscount | undefined,
+  receiptSubtotal: number,
+  maxDiscount: number
+): number {
+  if (!discount || discount.value <= 0) {
+    return 0;
+  }
+  const requested = discount.type === 'percent'
+    ? (discount.value / 100) * receiptSubtotal
+    : discount.value;
+  const clamped = Math.min(Math.max(requested, 0), Math.max(maxDiscount, 0));
+  return Number(clamped.toFixed(2));
 }

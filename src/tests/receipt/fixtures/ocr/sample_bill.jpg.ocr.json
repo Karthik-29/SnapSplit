@@ -1,0 +1,714 @@
+{
+  "sourceFile": "sample_bill.jpg",
+  "imageWidth": 1140,
+  "imageHeight": 1900,
+  "detectedReceiptRegion": {
+    "x": 52,
+    "y": 52,
+    "width": 702,
+    "height": 1170
+  },
+  "text": "ala\n£10ha lanrestaurantgeat.con           2\nY‘Zu‘j:,é\"::' &iJ;;‘ii\n3/12/2016 1:13:51 PM               /\nSequence #: 0000068           '\n10 #: 0389450\nITEM                            QTY PRICE\nCAUSA DE POLLD\"“\"\"“““”  ‘5895\nCEVICHE DE CAMARONES           1 $16.95      a\nLIMONADA                     1 $4.00\nPESCADD AL AJILLO             1 $15.9%\nSubtotal             $45.8%\nTotal Taxes           $3.67\nGrand Total          $49.52\nAmount Die:         W Y\n15%            20%           25%\n$7.43         $9.90         $12.38\nTIP IS NOT INCLUDED    PROPINA NO INCLUIDA\nTHANK YOU - GRACIAS!!!\nGuest Check           1,\n",
+  "tokens": [
+    {
+      "text": "ala",
+      "confidence": 84.97223663330078,
+      "boundingBox": {
+        "x": 1011,
+        "y": 80,
+        "width": 83,
+        "height": 69
+      }
+    },
+    {
+      "text": "£10ha",
+      "confidence": 6.231452941894531,
+      "boundingBox": {
+        "x": 207,
+        "y": 527,
+        "width": 92,
+        "height": 53
+      }
+    },
+    {
+      "text": "lanrestaurantgeat.con",
+      "confidence": 0,
+      "boundingBox": {
+        "x": 315,
+        "y": 509,
+        "width": 445,
+        "height": 85
+      }
+    },
+    {
+      "text": "2",
+      "confidence": 80.74762725830078,
+      "boundingBox": {
+        "x": 1091,
+        "y": 525,
+        "width": 23,
+        "height": 38
+      }
+    },
+    {
+      "text": "Y‘Zu‘j:,é\"::'",
+      "confidence": 26.7730712890625,
+      "boundingBox": {
+        "x": 276,
+        "y": 599,
+        "width": 212,
+        "height": 50
+      }
+    },
+    {
+      "text": "&iJ;;‘ii",
+      "confidence": 41.99104309082031,
+      "boundingBox": {
+        "x": 529,
+        "y": 595,
+        "width": 141,
+        "height": 52
+      }
+    },
+    {
+      "text": "3/12/2016",
+      "confidence": 91.69915771484375,
+      "boundingBox": {
+        "x": 293,
+        "y": 665,
+        "width": 181,
+        "height": 33
+      }
+    },
+    {
+      "text": "1:13:51",
+      "confidence": 77.66136932373047,
+      "boundingBox": {
+        "x": 504,
+        "y": 663,
+        "width": 127,
+        "height": 30
+      }
+    },
+    {
+      "text": "PM",
+      "confidence": 61.6612663269043,
+      "boundingBox": {
+        "x": 663,
+        "y": 663,
+        "width": 33,
+        "height": 19
+      }
+    },
+    {
+      "text": "/",
+      "confidence": 82.85360717773438,
+      "boundingBox": {
+        "x": 1007,
+        "y": 651,
+        "width": 14,
+        "height": 35
+      }
+    },
+    {
+      "text": "Sequence",
+      "confidence": 91.41809844970703,
+      "boundingBox": {
+        "x": 295,
+        "y": 711,
+        "width": 162,
+        "height": 32
+      }
+    },
+    {
+      "text": "#:",
+      "confidence": 91.85283660888672,
+      "boundingBox": {
+        "x": 483,
+        "y": 717,
+        "width": 31,
+        "height": 21
+      }
+    },
+    {
+      "text": "0000068",
+      "confidence": 94.63489532470703,
+      "boundingBox": {
+        "x": 549,
+        "y": 709,
+        "width": 131,
+        "height": 29
+      }
+    },
+    {
+      "text": "'",
+      "confidence": 52.86729431152344,
+      "boundingBox": {
+        "x": 1001,
+        "y": 690,
+        "width": 4,
+        "height": 6
+      }
+    },
+    {
+      "text": "10",
+      "confidence": 87.55294036865234,
+      "boundingBox": {
+        "x": 364,
+        "y": 756,
+        "width": 34,
+        "height": 29
+      }
+    },
+    {
+      "text": "#:",
+      "confidence": 87.65980529785156,
+      "boundingBox": {
+        "x": 424,
+        "y": 759,
+        "width": 32,
+        "height": 26
+      }
+    },
+    {
+      "text": "0389450",
+      "confidence": 75.66442108154297,
+      "boundingBox": {
+        "x": 486,
+        "y": 755,
+        "width": 135,
+        "height": 30
+      }
+    },
+    {
+      "text": "ITEM",
+      "confidence": 62.46097946166992,
+      "boundingBox": {
+        "x": 65,
+        "y": 802,
+        "width": 81,
+        "height": 32
+      }
+    },
+    {
+      "text": "QTY",
+      "confidence": 81.15802764892578,
+      "boundingBox": {
+        "x": 739,
+        "y": 798,
+        "width": 50,
+        "height": 31
+      }
+    },
+    {
+      "text": "PRICE",
+      "confidence": 81.15802764892578,
+      "boundingBox": {
+        "x": 837,
+        "y": 795,
+        "width": 96,
+        "height": 31
+      }
+    },
+    {
+      "text": "CAUSA",
+      "confidence": 92.23767852783203,
+      "boundingBox": {
+        "x": 64,
+        "y": 896,
+        "width": 107,
+        "height": 33
+      }
+    },
+    {
+      "text": "DE",
+      "confidence": 92.23767852783203,
+      "boundingBox": {
+        "x": 196,
+        "y": 895,
+        "width": 40,
+        "height": 33
+      }
+    },
+    {
+      "text": "POLLD\"“\"\"“““”",
+      "confidence": 28.879547119140625,
+      "boundingBox": {
+        "x": 261,
+        "y": 863,
+        "width": 430,
+        "height": 65
+      }
+    },
+    {
+      "text": "‘5895",
+      "confidence": 34.96179962158203,
+      "boundingBox": {
+        "x": 771,
+        "y": 889,
+        "width": 177,
+        "height": 34
+      }
+    },
+    {
+      "text": "CEVICHE",
+      "confidence": 91.17295837402344,
+      "boundingBox": {
+        "x": 65,
+        "y": 943,
+        "width": 151,
+        "height": 34
+      }
+    },
+    {
+      "text": "DE",
+      "confidence": 92.396728515625,
+      "boundingBox": {
+        "x": 241,
+        "y": 943,
+        "width": 41,
+        "height": 32
+      }
+    },
+    {
+      "text": "CAMARONES",
+      "confidence": 90.77279663085938,
+      "boundingBox": {
+        "x": 306,
+        "y": 941,
+        "width": 191,
+        "height": 34
+      }
+    },
+    {
+      "text": "1",
+      "confidence": 82.69806671142578,
+      "boundingBox": {
+        "x": 776,
+        "y": 940,
+        "width": 9,
+        "height": 28
+      }
+    },
+    {
+      "text": "$16.95",
+      "confidence": 85.88892364501953,
+      "boundingBox": {
+        "x": 834,
+        "y": 936,
+        "width": 120,
+        "height": 36
+      }
+    },
+    {
+      "text": "a",
+      "confidence": 75.55179595947266,
+      "boundingBox": {
+        "x": 1093,
+        "y": 947,
+        "width": 21,
+        "height": 38
+      }
+    },
+    {
+      "text": "LIMONADA",
+      "confidence": 90.68670654296875,
+      "boundingBox": {
+        "x": 69,
+        "y": 991,
+        "width": 172,
+        "height": 35
+      }
+    },
+    {
+      "text": "1",
+      "confidence": 67.96891784667969,
+      "boundingBox": {
+        "x": 782,
+        "y": 987,
+        "width": 9,
+        "height": 29
+      }
+    },
+    {
+      "text": "$4.00",
+      "confidence": 67.96891784667969,
+      "boundingBox": {
+        "x": 860,
+        "y": 983,
+        "width": 100,
+        "height": 36
+      }
+    },
+    {
+      "text": "PESCADD",
+      "confidence": 85.36874389648438,
+      "boundingBox": {
+        "x": 68,
+        "y": 1040,
+        "width": 152,
+        "height": 36
+      }
+    },
+    {
+      "text": "AL",
+      "confidence": 92.64578247070312,
+      "boundingBox": {
+        "x": 246,
+        "y": 1040,
+        "width": 41,
+        "height": 33
+      }
+    },
+    {
+      "text": "AJILLO",
+      "confidence": 91.91395568847656,
+      "boundingBox": {
+        "x": 313,
+        "y": 1038,
+        "width": 128,
+        "height": 34
+      }
+    },
+    {
+      "text": "1",
+      "confidence": 81.75364685058594,
+      "boundingBox": {
+        "x": 786,
+        "y": 1034,
+        "width": 11,
+        "height": 31
+      }
+    },
+    {
+      "text": "$15.9%",
+      "confidence": 25.53582000732422,
+      "boundingBox": {
+        "x": 846,
+        "y": 1031,
+        "width": 121,
+        "height": 36
+      }
+    },
+    {
+      "text": "Subtotal",
+      "confidence": 91.01647186279297,
+      "boundingBox": {
+        "x": 406,
+        "y": 1131,
+        "width": 168,
+        "height": 39
+      }
+    },
+    {
+      "text": "$45.8%",
+      "confidence": 58.696495056152344,
+      "boundingBox": {
+        "x": 859,
+        "y": 1128,
+        "width": 123,
+        "height": 37
+      }
+    },
+    {
+      "text": "Total",
+      "confidence": 92.34931945800781,
+      "boundingBox": {
+        "x": 410,
+        "y": 1183,
+        "width": 104,
+        "height": 39
+      }
+    },
+    {
+      "text": "Taxes",
+      "confidence": 92.80128479003906,
+      "boundingBox": {
+        "x": 542,
+        "y": 1183,
+        "width": 108,
+        "height": 36
+      }
+    },
+    {
+      "text": "$3.67",
+      "confidence": 89.50244903564453,
+      "boundingBox": {
+        "x": 886,
+        "y": 1177,
+        "width": 99,
+        "height": 40
+      }
+    },
+    {
+      "text": "Grand",
+      "confidence": 91.45773315429688,
+      "boundingBox": {
+        "x": 417,
+        "y": 1287,
+        "width": 110,
+        "height": 40
+      }
+    },
+    {
+      "text": "Total",
+      "confidence": 92.3134536743164,
+      "boundingBox": {
+        "x": 551,
+        "y": 1284,
+        "width": 104,
+        "height": 40
+      }
+    },
+    {
+      "text": "$49.52",
+      "confidence": 89.07609558105469,
+      "boundingBox": {
+        "x": 878,
+        "y": 1278,
+        "width": 126,
+        "height": 41
+      }
+    },
+    {
+      "text": "Amount",
+      "confidence": 28.254653930664062,
+      "boundingBox": {
+        "x": 424,
+        "y": 1343,
+        "width": 131,
+        "height": 75
+      }
+    },
+    {
+      "text": "Die:",
+      "confidence": 0.0542144775390625,
+      "boundingBox": {
+        "x": 578,
+        "y": 1342,
+        "width": 85,
+        "height": 72
+      }
+    },
+    {
+      "text": "W",
+      "confidence": 19.246139526367188,
+      "boundingBox": {
+        "x": 886,
+        "y": 1333,
+        "width": 64,
+        "height": 79
+      }
+    },
+    {
+      "text": "Y",
+      "confidence": 26.04186248779297,
+      "boundingBox": {
+        "x": 1087,
+        "y": 1363,
+        "width": 38,
+        "height": 51
+      }
+    },
+    {
+      "text": "15%",
+      "confidence": 91.2425765991211,
+      "boundingBox": {
+        "x": 199,
+        "y": 1436,
+        "width": 62,
+        "height": 38
+      }
+    },
+    {
+      "text": "20%",
+      "confidence": 92.06095123291016,
+      "boundingBox": {
+        "x": 518,
+        "y": 1427,
+        "width": 65,
+        "height": 39
+      }
+    },
+    {
+      "text": "25%",
+      "confidence": 73.52595520019531,
+      "boundingBox": {
+        "x": 829,
+        "y": 1417,
+        "width": 64,
+        "height": 39
+      }
+    },
+    {
+      "text": "$7.43",
+      "confidence": 92.31002044677734,
+      "boundingBox": {
+        "x": 173,
+        "y": 1491,
+        "width": 113,
+        "height": 45
+      }
+    },
+    {
+      "text": "$9.90",
+      "confidence": 92.53456115722656,
+      "boundingBox": {
+        "x": 499,
+        "y": 1481,
+        "width": 110,
+        "height": 45
+      }
+    },
+    {
+      "text": "$12.38",
+      "confidence": 89.96704864501953,
+      "boundingBox": {
+        "x": 813,
+        "y": 1471,
+        "width": 128,
+        "height": 45
+      }
+    },
+    {
+      "text": "TIP",
+      "confidence": 91.43925476074219,
+      "boundingBox": {
+        "x": 81,
+        "y": 1612,
+        "width": 67,
+        "height": 42
+      }
+    },
+    {
+      "text": "IS",
+      "confidence": 93.25321960449219,
+      "boundingBox": {
+        "x": 178,
+        "y": 1610,
+        "width": 42,
+        "height": 41
+      }
+    },
+    {
+      "text": "NOT",
+      "confidence": 91.66004943847656,
+      "boundingBox": {
+        "x": 250,
+        "y": 1607,
+        "width": 62,
+        "height": 41
+      }
+    },
+    {
+      "text": "INCLUDED",
+      "confidence": 90.8750991821289,
+      "boundingBox": {
+        "x": 345,
+        "y": 1600,
+        "width": 180,
+        "height": 46
+      }
+    },
+    {
+      "text": "PROPINA",
+      "confidence": 91.0872802734375,
+      "boundingBox": {
+        "x": 620,
+        "y": 1591,
+        "width": 155,
+        "height": 43
+      }
+    },
+    {
+      "text": "NO",
+      "confidence": 90.32789611816406,
+      "boundingBox": {
+        "x": 801,
+        "y": 1588,
+        "width": 41,
+        "height": 39
+      }
+    },
+    {
+      "text": "INCLUIDA",
+      "confidence": 90.32789611816406,
+      "boundingBox": {
+        "x": 869,
+        "y": 1579,
+        "width": 169,
+        "height": 45
+      }
+    },
+    {
+      "text": "THANK",
+      "confidence": 90.62763977050781,
+      "boundingBox": {
+        "x": 322,
+        "y": 1662,
+        "width": 113,
+        "height": 43
+      }
+    },
+    {
+      "text": "YOU",
+      "confidence": 92.59519958496094,
+      "boundingBox": {
+        "x": 462,
+        "y": 1659,
+        "width": 66,
+        "height": 41
+      }
+    },
+    {
+      "text": "-",
+      "confidence": 93.16400146484375,
+      "boundingBox": {
+        "x": 558,
+        "y": 1675,
+        "width": 14,
+        "height": 6
+      }
+    },
+    {
+      "text": "GRACIAS!!!",
+      "confidence": 80.34315490722656,
+      "boundingBox": {
+        "x": 600,
+        "y": 1646,
+        "width": 218,
+        "height": 49
+      }
+    },
+    {
+      "text": "Guest",
+      "confidence": 91.59150695800781,
+      "boundingBox": {
+        "x": 441,
+        "y": 1716,
+        "width": 110,
+        "height": 45
+      }
+    },
+    {
+      "text": "Check",
+      "confidence": 92.53597259521484,
+      "boundingBox": {
+        "x": 580,
+        "y": 1709,
+        "width": 111,
+        "height": 45
+      }
+    },
+    {
+      "text": "1,",
+      "confidence": 32.48240661621094,
+      "boundingBox": {
+        "x": 1007,
+        "y": 1762,
+        "width": 39,
+        "height": 7
+      }
+    }
+  ]
+}

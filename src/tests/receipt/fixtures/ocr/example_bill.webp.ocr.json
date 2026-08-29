@@ -1,0 +1,994 @@
+{
+  "sourceFile": "example_bill.webp",
+  "imageWidth": 1425,
+  "imageHeight": 1900,
+  "detectedReceiptRegion": {
+    "x": 0,
+    "y": 0,
+    "width": 768,
+    "height": 1024
+  },
+  "text": "|             VICTORY VENTURES\nKAMAT HOSARUCHI\nMysore Bangalore Road\nMudagere, Channapatna (T)\nRamanagara (D)\n————————— T CaSh MG!mO e e o e R e ——\nDate : 5/02/24     Bill No. * 41871\nT.No.: 7       W. No.  21  -\n;’a:t—\\::;\\ars       Qty Rate AmounE\nKnJU MASALA           1 280 250\nGOBI MANCHURIAN        1 140     140\nROTI                   4 40     160\nKULCHA               2   50     100\nFood Total :    650. 00\nPrices incl. of taxes as summarized\nRs 650 includes CGST @2.5% Rs 15.48\nRs 650 includes SGST @2.5% Rs 15. 48\n4/8/2       Total :       650\nGSTIN. 28ABLPH1358N324       (08:17 P¥)\nAL      Thank You       Visit Agaln\n",
+  "tokens": [
+    {
+      "text": "|",
+      "confidence": 79.91140747070312,
+      "boundingBox": {
+        "x": 30,
+        "y": 143,
+        "width": 3,
+        "height": 1
+      }
+    },
+    {
+      "text": "VICTORY",
+      "confidence": 84.89120483398438,
+      "boundingBox": {
+        "x": 480,
+        "y": 139,
+        "width": 222,
+        "height": 66
+      }
+    },
+    {
+      "text": "VENTURES",
+      "confidence": 92.8744888305664,
+      "boundingBox": {
+        "x": 736,
+        "y": 155,
+        "width": 238,
+        "height": 46
+      }
+    },
+    {
+      "text": "KAMAT",
+      "confidence": 83.40290832519531,
+      "boundingBox": {
+        "x": 317,
+        "y": 222,
+        "width": 293,
+        "height": 47
+      }
+    },
+    {
+      "text": "HOSARUCHI",
+      "confidence": 88.05995178222656,
+      "boundingBox": {
+        "x": 679,
+        "y": 203,
+        "width": 526,
+        "height": 60
+      }
+    },
+    {
+      "text": "Mysore",
+      "confidence": 90.90000915527344,
+      "boundingBox": {
+        "x": 422,
+        "y": 282,
+        "width": 176,
+        "height": 41
+      }
+    },
+    {
+      "text": "Bangalore",
+      "confidence": 87.47032928466797,
+      "boundingBox": {
+        "x": 631,
+        "y": 275,
+        "width": 268,
+        "height": 46
+      }
+    },
+    {
+      "text": "Road",
+      "confidence": 89.95963287353516,
+      "boundingBox": {
+        "x": 934,
+        "y": 267,
+        "width": 118,
+        "height": 46
+      }
+    },
+    {
+      "text": "Mudagere,",
+      "confidence": 91.5693588256836,
+      "boundingBox": {
+        "x": 388,
+        "y": 335,
+        "width": 253,
+        "height": 40
+      }
+    },
+    {
+      "text": "Channapatna",
+      "confidence": 52.68536376953125,
+      "boundingBox": {
+        "x": 660,
+        "y": 332,
+        "width": 328,
+        "height": 41
+      }
+    },
+    {
+      "text": "(T)",
+      "confidence": 52.68536376953125,
+      "boundingBox": {
+        "x": 1002,
+        "y": 323,
+        "width": 66,
+        "height": 42
+      }
+    },
+    {
+      "text": "Ramanagara",
+      "confidence": 49.57365036010742,
+      "boundingBox": {
+        "x": 539,
+        "y": 385,
+        "width": 377,
+        "height": 44
+      }
+    },
+    {
+      "text": "(D)",
+      "confidence": 96.70867156982422,
+      "boundingBox": {
+        "x": 848,
+        "y": 379,
+        "width": 72,
+        "height": 66
+      }
+    },
+    {
+      "text": "—————————",
+      "confidence": 19.120018005371094,
+      "boundingBox": {
+        "x": 219,
+        "y": 466,
+        "width": 222,
+        "height": 10
+      }
+    },
+    {
+      "text": "T",
+      "confidence": 31.4146728515625,
+      "boundingBox": {
+        "x": 515,
+        "y": 460,
+        "width": 82,
+        "height": 6
+      }
+    },
+    {
+      "text": "CaSh",
+      "confidence": 72.17086791992188,
+      "boundingBox": {
+        "x": 633,
+        "y": 439,
+        "width": 115,
+        "height": 43
+      }
+    },
+    {
+      "text": "MG!mO",
+      "confidence": 69.48334503173828,
+      "boundingBox": {
+        "x": 784,
+        "y": 440,
+        "width": 118,
+        "height": 40
+      }
+    },
+    {
+      "text": "e",
+      "confidence": 29.33142852783203,
+      "boundingBox": {
+        "x": 939,
+        "y": 453,
+        "width": 81,
+        "height": 7
+      }
+    },
+    {
+      "text": "e",
+      "confidence": 34.82029724121094,
+      "boundingBox": {
+        "x": 1039,
+        "y": 452,
+        "width": 13,
+        "height": 5
+      }
+    },
+    {
+      "text": "o",
+      "confidence": 23.17694854736328,
+      "boundingBox": {
+        "x": 1081,
+        "y": 450,
+        "width": 30,
+        "height": 6
+      }
+    },
+    {
+      "text": "e",
+      "confidence": 31.929054260253906,
+      "boundingBox": {
+        "x": 1126,
+        "y": 450,
+        "width": 14,
+        "height": 4
+      }
+    },
+    {
+      "text": "R",
+      "confidence": 15.441329956054688,
+      "boundingBox": {
+        "x": 1204,
+        "y": 446,
+        "width": 51,
+        "height": 7
+      }
+    },
+    {
+      "text": "e",
+      "confidence": 5.888206481933594,
+      "boundingBox": {
+        "x": 1282,
+        "y": 445,
+        "width": 17,
+        "height": 5
+      }
+    },
+    {
+      "text": "——",
+      "confidence": 5.888206481933594,
+      "boundingBox": {
+        "x": 1315,
+        "y": 443,
+        "width": 53,
+        "height": 6
+      }
+    },
+    {
+      "text": "Date",
+      "confidence": 89.81221008300781,
+      "boundingBox": {
+        "x": 218,
+        "y": 552,
+        "width": 115,
+        "height": 42
+      }
+    },
+    {
+      "text": ":",
+      "confidence": 85.81990051269531,
+      "boundingBox": {
+        "x": 373,
+        "y": 556,
+        "width": 9,
+        "height": 24
+      }
+    },
+    {
+      "text": "5/02/24",
+      "confidence": 26.920249938964844,
+      "boundingBox": {
+        "x": 425,
+        "y": 540,
+        "width": 235,
+        "height": 47
+      }
+    },
+    {
+      "text": "Bill",
+      "confidence": 88.60124206542969,
+      "boundingBox": {
+        "x": 812,
+        "y": 532,
+        "width": 109,
+        "height": 46
+      }
+    },
+    {
+      "text": "No.",
+      "confidence": 89.91693878173828,
+      "boundingBox": {
+        "x": 967,
+        "y": 531,
+        "width": 73,
+        "height": 41
+      }
+    },
+    {
+      "text": "*",
+      "confidence": 41.098533630371094,
+      "boundingBox": {
+        "x": 1100,
+        "y": 535,
+        "width": 8,
+        "height": 25
+      }
+    },
+    {
+      "text": "41871",
+      "confidence": 53.34577560424805,
+      "boundingBox": {
+        "x": 1152,
+        "y": 486,
+        "width": 149,
+        "height": 81
+      }
+    },
+    {
+      "text": "T.No.:",
+      "confidence": 88.25635528564453,
+      "boundingBox": {
+        "x": 220,
+        "y": 616,
+        "width": 163,
+        "height": 40
+      }
+    },
+    {
+      "text": "7",
+      "confidence": 96.46549987792969,
+      "boundingBox": {
+        "x": 427,
+        "y": 610,
+        "width": 25,
+        "height": 42
+      }
+    },
+    {
+      "text": "W.",
+      "confidence": 89.4679183959961,
+      "boundingBox": {
+        "x": 816,
+        "y": 600,
+        "width": 42,
+        "height": 42
+      }
+    },
+    {
+      "text": "No.",
+      "confidence": 89.02179718017578,
+      "boundingBox": {
+        "x": 907,
+        "y": 595,
+        "width": 73,
+        "height": 44
+      }
+    },
+    {
+      "text": "21",
+      "confidence": 5.097465515136719,
+      "boundingBox": {
+        "x": 1101,
+        "y": 589,
+        "width": 74,
+        "height": 42
+      }
+    },
+    {
+      "text": "-",
+      "confidence": 6.2216644287109375,
+      "boundingBox": {
+        "x": 1252,
+        "y": 662,
+        "width": 122,
+        "height": 8
+      }
+    },
+    {
+      "text": ";’a:t—\\::;\\ars",
+      "confidence": 47.90596389770508,
+      "boundingBox": {
+        "x": 222,
+        "y": 687,
+        "width": 324,
+        "height": 88
+      }
+    },
+    {
+      "text": "Qty",
+      "confidence": 85.67989349365234,
+      "boundingBox": {
+        "x": 882,
+        "y": 717,
+        "width": 87,
+        "height": 46
+      }
+    },
+    {
+      "text": "Rate",
+      "confidence": 91.51031494140625,
+      "boundingBox": {
+        "x": 1004,
+        "y": 714,
+        "width": 120,
+        "height": 44
+      }
+    },
+    {
+      "text": "AmounE",
+      "confidence": 49.800724029541016,
+      "boundingBox": {
+        "x": 1188,
+        "y": 706,
+        "width": 188,
+        "height": 84
+      }
+    },
+    {
+      "text": "KnJU",
+      "confidence": 58.70866394042969,
+      "boundingBox": {
+        "x": 235,
+        "y": 807,
+        "width": 137,
+        "height": 84
+      }
+    },
+    {
+      "text": "MASALA",
+      "confidence": 66.15290832519531,
+      "boundingBox": {
+        "x": 381,
+        "y": 805,
+        "width": 175,
+        "height": 82
+      }
+    },
+    {
+      "text": "1",
+      "confidence": 40.128684997558594,
+      "boundingBox": {
+        "x": 950,
+        "y": 837,
+        "width": 16,
+        "height": 41
+      }
+    },
+    {
+      "text": "280",
+      "confidence": 52.88426208496094,
+      "boundingBox": {
+        "x": 1039,
+        "y": 834,
+        "width": 88,
+        "height": 40
+      }
+    },
+    {
+      "text": "250",
+      "confidence": 83.76644897460938,
+      "boundingBox": {
+        "x": 1287,
+        "y": 828,
+        "width": 92,
+        "height": 44
+      }
+    },
+    {
+      "text": "GOBI",
+      "confidence": 88.03370666503906,
+      "boundingBox": {
+        "x": 234,
+        "y": 905,
+        "width": 111,
+        "height": 37
+      }
+    },
+    {
+      "text": "MANCHURIAN",
+      "confidence": 83.00428009033203,
+      "boundingBox": {
+        "x": 381,
+        "y": 900,
+        "width": 293,
+        "height": 41
+      }
+    },
+    {
+      "text": "1",
+      "confidence": 88.11479949951172,
+      "boundingBox": {
+        "x": 951,
+        "y": 896,
+        "width": 14,
+        "height": 37
+      }
+    },
+    {
+      "text": "140",
+      "confidence": 88.11479949951172,
+      "boundingBox": {
+        "x": 1042,
+        "y": 892,
+        "width": 85,
+        "height": 40
+      }
+    },
+    {
+      "text": "140",
+      "confidence": 96.47917938232422,
+      "boundingBox": {
+        "x": 1292,
+        "y": 888,
+        "width": 88,
+        "height": 40
+      }
+    },
+    {
+      "text": "ROTI",
+      "confidence": 91.2470703125,
+      "boundingBox": {
+        "x": 226,
+        "y": 957,
+        "width": 112,
+        "height": 41
+      }
+    },
+    {
+      "text": "4",
+      "confidence": 91.62608337402344,
+      "boundingBox": {
+        "x": 942,
+        "y": 950,
+        "width": 28,
+        "height": 41
+      }
+    },
+    {
+      "text": "40",
+      "confidence": 87.92733764648438,
+      "boundingBox": {
+        "x": 1065,
+        "y": 948,
+        "width": 60,
+        "height": 41
+      }
+    },
+    {
+      "text": "160",
+      "confidence": 96.59109497070312,
+      "boundingBox": {
+        "x": 1291,
+        "y": 944,
+        "width": 90,
+        "height": 43
+      }
+    },
+    {
+      "text": "KULCHA",
+      "confidence": 90.5185317993164,
+      "boundingBox": {
+        "x": 223,
+        "y": 1010,
+        "width": 177,
+        "height": 55
+      }
+    },
+    {
+      "text": "2",
+      "confidence": 96.96358489990234,
+      "boundingBox": {
+        "x": 942,
+        "y": 1007,
+        "width": 27,
+        "height": 39
+      }
+    },
+    {
+      "text": "50",
+      "confidence": 95.92689514160156,
+      "boundingBox": {
+        "x": 1066,
+        "y": 1005,
+        "width": 59,
+        "height": 40
+      }
+    },
+    {
+      "text": "100",
+      "confidence": 96.49742126464844,
+      "boundingBox": {
+        "x": 1292,
+        "y": 1003,
+        "width": 90,
+        "height": 42
+      }
+    },
+    {
+      "text": "Food",
+      "confidence": 89.27381134033203,
+      "boundingBox": {
+        "x": 695,
+        "y": 1127,
+        "width": 118,
+        "height": 42
+      }
+    },
+    {
+      "text": "Total",
+      "confidence": 89.24503326416016,
+      "boundingBox": {
+        "x": 847,
+        "y": 1126,
+        "width": 141,
+        "height": 42
+      }
+    },
+    {
+      "text": ":",
+      "confidence": 82.48335266113281,
+      "boundingBox": {
+        "x": 1042,
+        "y": 1134,
+        "width": 9,
+        "height": 23
+      }
+    },
+    {
+      "text": "650.",
+      "confidence": 91.53214263916016,
+      "boundingBox": {
+        "x": 1193,
+        "y": 1126,
+        "width": 109,
+        "height": 42
+      }
+    },
+    {
+      "text": "00",
+      "confidence": 96.02313995361328,
+      "boundingBox": {
+        "x": 1326,
+        "y": 1126,
+        "width": 58,
+        "height": 42
+      }
+    },
+    {
+      "text": "Prices",
+      "confidence": 91.91878509521484,
+      "boundingBox": {
+        "x": 210,
+        "y": 1246,
+        "width": 179,
+        "height": 44
+      }
+    },
+    {
+      "text": "incl.",
+      "confidence": 83.88939666748047,
+      "boundingBox": {
+        "x": 428,
+        "y": 1247,
+        "width": 122,
+        "height": 44
+      }
+    },
+    {
+      "text": "of",
+      "confidence": 91.55125427246094,
+      "boundingBox": {
+        "x": 601,
+        "y": 1247,
+        "width": 53,
+        "height": 43
+      }
+    },
+    {
+      "text": "taxes",
+      "confidence": 91.44290161132812,
+      "boundingBox": {
+        "x": 692,
+        "y": 1249,
+        "width": 147,
+        "height": 41
+      }
+    },
+    {
+      "text": "as",
+      "confidence": 92.0277328491211,
+      "boundingBox": {
+        "x": 875,
+        "y": 1259,
+        "width": 59,
+        "height": 32
+      }
+    },
+    {
+      "text": "summarized",
+      "confidence": 63.82072448730469,
+      "boundingBox": {
+        "x": 970,
+        "y": 1248,
+        "width": 317,
+        "height": 46
+      }
+    },
+    {
+      "text": "Rs",
+      "confidence": 92.7002182006836,
+      "boundingBox": {
+        "x": 205,
+        "y": 1307,
+        "width": 58,
+        "height": 42
+      }
+    },
+    {
+      "text": "650",
+      "confidence": 89.85626220703125,
+      "boundingBox": {
+        "x": 298,
+        "y": 1308,
+        "width": 87,
+        "height": 41
+      }
+    },
+    {
+      "text": "includes",
+      "confidence": 89.85626220703125,
+      "boundingBox": {
+        "x": 426,
+        "y": 1309,
+        "width": 226,
+        "height": 42
+      }
+    },
+    {
+      "text": "CGST",
+      "confidence": 92.65106201171875,
+      "boundingBox": {
+        "x": 686,
+        "y": 1308,
+        "width": 122,
+        "height": 45
+      }
+    },
+    {
+      "text": "@2.5%",
+      "confidence": 86.1045150756836,
+      "boundingBox": {
+        "x": 840,
+        "y": 1309,
+        "width": 159,
+        "height": 46
+      }
+    },
+    {
+      "text": "Rs",
+      "confidence": 92.16764831542969,
+      "boundingBox": {
+        "x": 1033,
+        "y": 1309,
+        "width": 59,
+        "height": 46
+      }
+    },
+    {
+      "text": "15.48",
+      "confidence": 69.31938171386719,
+      "boundingBox": {
+        "x": 1133,
+        "y": 1309,
+        "width": 155,
+        "height": 47
+      }
+    },
+    {
+      "text": "Rs",
+      "confidence": 70.03311920166016,
+      "boundingBox": {
+        "x": 200,
+        "y": 1366,
+        "width": 58,
+        "height": 45
+      }
+    },
+    {
+      "text": "650",
+      "confidence": 91.72980499267578,
+      "boundingBox": {
+        "x": 293,
+        "y": 1367,
+        "width": 90,
+        "height": 43
+      }
+    },
+    {
+      "text": "includes",
+      "confidence": 88.40980529785156,
+      "boundingBox": {
+        "x": 424,
+        "y": 1369,
+        "width": 227,
+        "height": 44
+      }
+    },
+    {
+      "text": "SGST",
+      "confidence": 92.07704162597656,
+      "boundingBox": {
+        "x": 686,
+        "y": 1370,
+        "width": 120,
+        "height": 45
+      }
+    },
+    {
+      "text": "@2.5%",
+      "confidence": 91.91838073730469,
+      "boundingBox": {
+        "x": 839,
+        "y": 1372,
+        "width": 162,
+        "height": 44
+      }
+    },
+    {
+      "text": "Rs",
+      "confidence": 92.29688262939453,
+      "boundingBox": {
+        "x": 1033,
+        "y": 1373,
+        "width": 62,
+        "height": 45
+      }
+    },
+    {
+      "text": "15.",
+      "confidence": 29.12310028076172,
+      "boundingBox": {
+        "x": 1132,
+        "y": 1373,
+        "width": 75,
+        "height": 46
+      }
+    },
+    {
+      "text": "48",
+      "confidence": 29.12310028076172,
+      "boundingBox": {
+        "x": 1224,
+        "y": 1373,
+        "width": 65,
+        "height": 47
+      }
+    },
+    {
+      "text": "4/8/2",
+      "confidence": 83.47920227050781,
+      "boundingBox": {
+        "x": 197,
+        "y": 1486,
+        "width": 149,
+        "height": 49
+      }
+    },
+    {
+      "text": "Total",
+      "confidence": 92.7462158203125,
+      "boundingBox": {
+        "x": 655,
+        "y": 1494,
+        "width": 140,
+        "height": 46
+      }
+    },
+    {
+      "text": ":",
+      "confidence": 81.18519592285156,
+      "boundingBox": {
+        "x": 850,
+        "y": 1504,
+        "width": 9,
+        "height": 27
+      }
+    },
+    {
+      "text": "650",
+      "confidence": 80.08772277832031,
+      "boundingBox": {
+        "x": 1197,
+        "y": 1496,
+        "width": 188,
+        "height": 49
+      }
+    },
+    {
+      "text": "GSTIN.",
+      "confidence": 85.64148712158203,
+      "boundingBox": {
+        "x": 191,
+        "y": 1608,
+        "width": 161,
+        "height": 49
+      }
+    },
+    {
+      "text": "28ABLPH1358N324",
+      "confidence": 18.252784729003906,
+      "boundingBox": {
+        "x": 379,
+        "y": 1614,
+        "width": 458,
+        "height": 52
+      }
+    },
+    {
+      "text": "(08:17",
+      "confidence": 87.6256332397461,
+      "boundingBox": {
+        "x": 1078,
+        "y": 1620,
+        "width": 181,
+        "height": 52
+      }
+    },
+    {
+      "text": "P¥)",
+      "confidence": 58.967979431152344,
+      "boundingBox": {
+        "x": 1294,
+        "y": 1630,
+        "width": 110,
+        "height": 56
+      }
+    },
+    {
+      "text": "AL",
+      "confidence": 33.405418395996094,
+      "boundingBox": {
+        "x": 192,
+        "y": 1669,
+        "width": 192,
+        "height": 50
+      }
+    },
+    {
+      "text": "Thank",
+      "confidence": 91.26397705078125,
+      "boundingBox": {
+        "x": 558,
+        "y": 1680,
+        "width": 149,
+        "height": 48
+      }
+    },
+    {
+      "text": "You",
+      "confidence": 90.02848052978516,
+      "boundingBox": {
+        "x": 745,
+        "y": 1684,
+        "width": 93,
+        "height": 47
+      }
+    },
+    {
+      "text": "Visit",
+      "confidence": 86.96400451660156,
+      "boundingBox": {
+        "x": 1035,
+        "y": 1684,
+        "width": 167,
+        "height": 69
+      }
+    },
+    {
+      "text": "Agaln",
+      "confidence": 50.99424362182617,
+      "boundingBox": {
+        "x": 1221,
+        "y": 1682,
+        "width": 135,
+        "height": 51
+      }
+    }
+  ]
+}
