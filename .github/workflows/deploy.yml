@@ -1,0 +1,54 @@
+name: Deploy to GitHub Pages
+
+# Builds the Vite app and publishes dist/ to GitHub Pages.
+# Deploys on every push to `codex` (the branch currently being worked on) and
+# can also be run by hand from the Actions tab.
+on:
+  push:
+    branches: [codex]
+  workflow_dispatch:
+
+# Least privilege: read the repo, write a Pages deployment, mint the OIDC token
+# that actions/deploy-pages exchanges with the Pages service.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never run two Pages deployments at once; let a newer push supersede an
+# in-progress run.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # `npm run build` == `tsc && vite build`. No secrets needed: the Google
+      # OAuth client ID and Picker API key are public browser config baked into
+      # the bundle by design.
+      - run: npm run build
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

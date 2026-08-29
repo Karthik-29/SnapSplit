@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>SnapSplit</title>
+    <script>
+      // GitHub Pages serves this file for any path it has no file for. SnapSplit
+      // uses client-side routing (react-router BrowserRouter), so a hard refresh
+      // or shared deep link like /review would otherwise 404. Encode the path
+      // into a query string and bounce to the app root, where /spa-restore.js
+      // puts it back before the router mounts.
+      // Technique: https://github.com/rafgraph/spa-github-pages
+      // pathSegmentsToKeep = 1 keeps the "/SnapSplit" project-site prefix and
+      // only encodes the app route after it (/SnapSplit/review -> /SnapSplit/?/review).
+      var pathSegmentsToKeep = 1;
+      var l = window.location;
+      l.replace(
+        l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
+        l.pathname.split('/').slice(0, 1 + pathSegmentsToKeep).join('/') + '/?/' +
+        l.pathname.slice(1).split('/').slice(pathSegmentsToKeep).join('/').replace(/&/g, '~and~') +
+        (l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : '') +
+        l.hash
+      );
+    </script>
+  </head>
+  <body></body>
+</html>
