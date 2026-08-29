@@ -167,6 +167,24 @@ nav a:hover,
   font-weight: 600;
 }
 
+/* ----- Footer ------------------------------------------------- */
+
+.app-footer {
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.footer-links {
+  gap: 8px 4px;
+}
+
+.app-footer p {
+  margin: 8px 0 0;
+}
+
 /* ----- Surfaces ----------------------------------------------- */
 
 section {

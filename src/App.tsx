@@ -7,6 +7,8 @@ import ParticipantsPage from './routes/ParticipantsPage';
 import SettlementPage from './routes/SettlementPage';
 import SheetExportPage from './routes/SheetExportPage';
 import PartyPage from './routes/PartyPage';
+import TermsPage from './routes/TermsPage';
+import PrivacyPage from './routes/PrivacyPage';
 import PartySync from './components/PartySync';
 import { usePartyContext } from './context/PartyContext';
 
@@ -46,8 +48,23 @@ function App() {
           <Route path="/settlement" element={<SettlementPage />} />
           <Route path="/export" element={<SheetExportPage />} />
           <Route path="/party" element={<PartyPage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
         </Routes>
       </main>
+      <footer className="app-footer">
+        <nav className="footer-links">
+          <Link to="/privacy">Privacy</Link>
+          <Link to="/terms">Terms</Link>
+          <a href="https://github.com/Karthik-29/SnapSplit" target="_blank" rel="noopener noreferrer">
+            GitHub
+          </a>
+        </nav>
+        <p>
+          A free hobby project by Karthik Nagraj. Runs entirely in your browser — use at your own
+          risk.
+        </p>
+      </footer>
     </div>
   );
 }
