@@ -1,11 +1,10 @@
 name: Deploy to GitHub Pages
 
 # Builds the Vite app and publishes dist/ to GitHub Pages.
-# Deploys on every push to `codex` (the branch currently being worked on) and
-# can also be run by hand from the Actions tab.
+# Deploys on every push to `main` and can also be run by hand from the Actions tab.
 on:
   push:
-    branches: [codex]
+    branches: [main]
   workflow_dispatch:
 
 # Least privilege: read the repo, write a Pages deployment, mint the OIDC token
