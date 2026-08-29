@@ -413,6 +413,11 @@ button.button-secondary:hover {
   cursor: pointer;
 }
 
+.participant-checkboxes .participant-checkbox-all {
+  font-weight: 600;
+  border-color: var(--accent);
+}
+
 /* ----- Participants ----------------------------------------------- */
 
 .participant-add {

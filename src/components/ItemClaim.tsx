@@ -47,6 +47,14 @@ function ItemClaim() {
     updateItemClaim({ ...claim, sharedWith });
   };
 
+  const handleSharedAllToggle = (itemId: string, checked: boolean) => {
+    const claim = state.itemClaims.find((entry) => entry.itemId === itemId);
+    if (!claim) return;
+
+    const sharedWith = checked ? state.participants.map((participant) => participant.id) : [];
+    updateItemClaim({ ...claim, sharedWith });
+  };
+
   return (
     <section>
       <h2>Item Claiming</h2>
@@ -62,6 +70,8 @@ function ItemClaim() {
           const remaining = Math.max(0, item.quantity - totalClaimed);
           const isValid = totalClaimed <= item.quantity;
           const sharedWarning = claim.mode === 'shared' && claim.sharedWith.length === 0;
+          const allShared = state.participants.length > 0 && claim.sharedWith.length === state.participants.length;
+          const someShared = claim.sharedWith.length > 0 && !allShared;
 
           return (
             <div key={item.id} className="item-claim-card">
@@ -122,6 +132,17 @@ function ItemClaim() {
                 <div className="shared-split">
                   <p>Select who shares this item:</p>
                   <div className="participant-checkboxes">
+                    <label className="participant-checkbox-all">
+                      <input
+                        type="checkbox"
+                        checked={allShared}
+                        ref={(el) => {
+                          if (el) el.indeterminate = someShared;
+                        }}
+                        onChange={(event) => handleSharedAllToggle(item.id, event.target.checked)}
+                      />
+                      All
+                    </label>
                     {state.participants.map((participant) => (
                       <label key={participant.id}>
                         <input

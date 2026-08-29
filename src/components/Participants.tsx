@@ -5,13 +5,22 @@ import { useAppContext } from '../context/AppContext';
 function Participants() {
   const { state, addParticipant, removeParticipant } = useAppContext();
   const [newName, setNewName] = useState('');
+  const [error, setError] = useState('');
 
   const handleAddParticipant = () => {
-    if (!newName.trim()) {
+    const trimmed = newName.trim();
+    if (!trimmed) {
       return;
     }
-    addParticipant(newName.trim());
+    // "all" is the reserved label for the select-everyone checkbox in item
+    // claiming; a participant with that name would be ambiguous there.
+    if (trimmed.toLowerCase() === 'all') {
+      setError('"all" is reserved — please choose a different name.');
+      return;
+    }
+    addParticipant(trimmed);
     setNewName('');
+    setError('');
   };
 
   const handleRemoveParticipant = (participantId: string) => {
@@ -53,13 +62,17 @@ function Participants() {
           <input
             type="text"
             value={newName}
-            onChange={(event) => setNewName(event.target.value)}
+            onChange={(event) => {
+              setNewName(event.target.value);
+              if (error) setError('');
+            }}
             placeholder="New participant"
           />
           <button type="button" onClick={handleAddParticipant}>
             Add
           </button>
         </div>
+        {error && <div className="field-error">{error}</div>}
       </div>
 
       <div className="section-actions">
