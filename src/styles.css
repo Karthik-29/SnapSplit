@@ -585,4 +585,80 @@ code {
   .participant-add {
     flex-direction: column;
   }
+
+  /* ---- Review line items: stack into cards on narrow screens ---------- *
+   * Scoped to the editable review table via the --stack modifier so the  *
+   * read-only .receipt-table tables (Participants, Settlement, Item      *
+   * claim) keep their normal layout. All of this is inside the query, so *
+   * the desktop view is untouched.                                       */
+  .receipt-table--stack,
+  .receipt-table--stack tbody,
+  .receipt-table--stack tr,
+  .receipt-table--stack td {
+    display: block;
+    width: 100%;
+  }
+
+  /* Header row is redundant once every cell carries its own data-label,
+     but keep it in the accessibility tree (clip pattern, not display:none). */
+  .receipt-table--stack thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    border: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .receipt-table--stack tr {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    padding: 10px 14px;
+  }
+
+  .receipt-table--stack tr + tr {
+    margin-top: 12px;
+  }
+
+  /* A tap shouldn't leave a card stuck in the desktop hover tint. */
+  .receipt-table--stack tbody tr:hover {
+    background: var(--surface);
+  }
+
+  .receipt-table--stack td {
+    border-bottom: 0;
+    padding: 8px 0;
+    text-align: left;
+  }
+
+  .receipt-table--stack td::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 4px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  /* The desktop 88px cap would just leave dead space in a full-width card. */
+  .receipt-table--stack input[type='number'],
+  .receipt-table--stack input.item-price {
+    max-width: none;
+  }
+
+  /* Last cell is the Delete button only: no label, full-width tap target. */
+  .receipt-table--stack td:last-child::before {
+    display: none;
+  }
+
+  .receipt-table--stack td:last-child button {
+    width: 100%;
+  }
 }

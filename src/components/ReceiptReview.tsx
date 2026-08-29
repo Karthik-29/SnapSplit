@@ -170,7 +170,7 @@ function ReceiptReview() {
       <p>Edit receipt items and confirm the receipt before proceeding.</p>
 
       <div className="card">
-        <table className="receipt-table">
+        <table className="receipt-table receipt-table--stack">
           <thead>
             <tr>
               <th>Item</th>
@@ -183,14 +183,14 @@ function ReceiptReview() {
           <tbody>
             {state.receiptItems.map((item) => (
               <tr key={item.id}>
-                <td>
+                <td data-label="Item">
                   <input
                     type="text"
                     value={item.name}
                     onChange={(event) => handleNameChange(item.id, event.target.value)}
                   />
                 </td>
-                <td>
+                <td data-label="Qty">
                   <input
                     type="number"
                     min="0"
@@ -198,7 +198,7 @@ function ReceiptReview() {
                     onChange={(event) => handleQuantityChange(item.id, event.target.value)}
                   />
                 </td>
-                <td>
+                <td data-label="Unit Price">
                   <input
                     className="item-price"
                     type="text"
@@ -208,7 +208,7 @@ function ReceiptReview() {
                     onBlur={() => handleUnitPriceBlur(item.id)}
                   />
                 </td>
-                <td>{item.totalPrice.toFixed(2)}</td>
+                <td data-label="Total">{item.totalPrice.toFixed(2)}</td>
                 <td>
                   <button type="button" onClick={() => removeBillItem(item.id)}>
                     Delete
