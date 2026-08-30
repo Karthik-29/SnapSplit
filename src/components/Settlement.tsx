@@ -21,6 +21,27 @@ function Settlement() {
 
   const checkSymbol = { pass: '✓', warn: '!', fail: '✕' } as const;
 
+  // Summary card figures. Everything here is display-only — the numbers come
+  // straight off `calculationResult` and are never fed back into the engine.
+  const round2 = (value: number) => Number(value.toFixed(2));
+  const subtotal = calculationResult.subtotal ?? 0;
+  const receiptDiscountAmt = calculationResult.receiptDiscount ?? 0;
+  // The "on top" discount the group applied (the total discount minus the part
+  // that was already printed on the receipt).
+  const groupDiscountAmt = round2((calculationResult.discount ?? 0) - receiptDiscountAmt);
+  // The receipt's own grand total, before any group discount. Tax for the card
+  // is derived from this minus the subtotal, so it never carries the engine's
+  // receipt-discount add-back (which would otherwise read as tax inflated by the
+  // receipt-discount amount).
+  const preGroupTotal = calculationResult.total ?? calculationResult.totalBill;
+  const taxRow = round2(preGroupTotal - subtotal);
+  // A pre-tax receipt discount sitting between a pre-discount subtotal line and
+  // the total drives `taxRow` negative — show it as its own reduction row (sized
+  // so the column still foots) instead of a tax line.
+  const showReceiptDiscountRow = taxRow < 0 && receiptDiscountAmt > 0;
+  const hasGroupDiscount = groupDiscountAmt > 0;
+  const amountPaid = calculationResult.totalBill;
+
   return (
     <section>
       <h2>Settlement</h2>
@@ -29,27 +50,42 @@ function Settlement() {
       <div className="card">
         <h3>Summary</h3>
         <div className="summary-grid">
-          <div>Total bill</div>
-          <div>₹{calculationResult.totalBill.toFixed(2)}</div>
           {calculationResult.subtotal !== undefined && (
             <>
               <div>Subtotal</div>
-              <div>₹{calculationResult.subtotal.toFixed(2)}</div>
+              <div className="summary-value">₹{subtotal.toFixed(2)}</div>
             </>
           )}
-          {calculationResult.tax !== undefined && calculationResult.tax > 0 && (
+          {taxRow > 0 && (
             <>
               <div>Tax</div>
-              <div>₹{calculationResult.tax.toFixed(2)}</div>
+              <div className="summary-value">+₹{taxRow.toFixed(2)}</div>
             </>
           )}
-          {calculationResult.discount !== undefined && calculationResult.discount > 0 && (
+          {showReceiptDiscountRow && (
             <>
-              <div>Discount</div>
-              <div>−₹{calculationResult.discount.toFixed(2)}</div>
+              <div>Receipt discount</div>
+              <div className="summary-value">−₹{(subtotal - preGroupTotal).toFixed(2)}</div>
             </>
           )}
+          {hasGroupDiscount && (
+            <>
+              <div className="summary-rule" />
+              <div>Bill total</div>
+              <div className="summary-value">₹{preGroupTotal.toFixed(2)}</div>
+              <div>Discount</div>
+              <div className="summary-value">−₹{groupDiscountAmt.toFixed(2)}</div>
+            </>
+          )}
+          <div className="summary-rule" />
+          <div className="summary-total">{hasGroupDiscount ? 'Amount paid' : 'Total bill'}</div>
+          <div className="summary-total summary-value">₹{amountPaid.toFixed(2)}</div>
         </div>
+        {receiptDiscountAmt > 0 && !showReceiptDiscountRow && (
+          <p className="field-hint">
+            Receipt total already includes a ₹{receiptDiscountAmt.toFixed(2)} discount.
+          </p>
+        )}
 
         <h3>Checks</h3>
         <ul className="review-checks">

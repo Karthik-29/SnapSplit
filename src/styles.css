@@ -311,13 +311,38 @@ button.button-secondary:hover {
 
 /* ----- Receipt / review ------------------------------------------ */
 
-.receipt-summary,
-.summary-grid {
+.receipt-summary {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 12px;
   margin-top: 16px;
+}
+
+/* Settlement "Summary" card: a receipt-style running tally, label left / amount
+   right, with a rule and an emphasised final "amount paid" line. */
+.summary-grid {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px 16px;
+  align-items: baseline;
+  margin-top: 16px;
+}
+
+.summary-grid .summary-value {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.summary-rule {
+  grid-column: 1 / -1;
+  border-top: 1px solid var(--border);
+  margin: 2px 0;
+}
+
+.summary-total {
+  font-weight: 700;
+  font-size: 1.05rem;
 }
 
 .receipt-totals {

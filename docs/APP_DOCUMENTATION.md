@@ -243,7 +243,7 @@ src/
     ReceiptReview.tsx        Edit parsed items, receipt subtotal/total, receipt discount, and the group discount (₹/%); live mismatch + totalBelowSubtotal warnings
     Participants.tsx         Add/remove people
     ItemClaim.tsx            Individual/shared item claiming UI
-    Settlement.tsx           Show calculated participant shares (with discount row) and the runReviewChecks pass/warn/fail list
+    Settlement.tsx           Receipt-style Summary card (subtotal / tax / discount rows, bold "amount paid" line), calculated participant shares, and the runReviewChecks pass/warn/fail list
     SheetExport.tsx          Show current Google Sheet party connection
 
   tests/
@@ -776,6 +776,32 @@ Final shares:  A 273   B 273   C 84
 Total bill: INR 630   (= printed grand total = sum of final shares)
 ```
 
+### How the Settlement Summary card presents this
+
+The engine numbers above are re-presented on the Settlement screen as a
+receipt-style running tally. This is **display-only** — `Settlement.tsx` reads
+`BillCalculationResult` and never feeds anything back:
+
+- **Tax row** is derived as `total − subtotal` (`calculationResult.total` is the
+  receipt grand total), *not* `BillCalculationResult.tax`. So the card shows the
+  example above as `Tax +INR 30`, not `INR 90` — the receipt-discount add-back
+  (`grossTotal = receiptTotal + receiptDiscount`) that the engine needs for
+  proportional allocation is not shown to the user as tax. A receipt where the
+  add-back would drive this negative (a pre-tax printed discount between a
+  pre-discount subtotal line and the total) instead gets an explicit
+  `Receipt discount −INR x` row sized so the column still foots.
+- **Receipt discount** (when it did not get its own row) is noted under the grid
+  as "Receipt total already includes a ₹x discount" rather than as a tally line,
+  since it is already inside `total`.
+- **Group discount** shows as its own `Discount −INR x` row beneath a `Bill total`
+  (= `total`) line.
+- The bold final line is **"Amount paid"** (= `totalBill`) when a group discount
+  applied, otherwise **"Total bill"**. It always equals the sum of the
+  participant shares shown below it.
+
+So the card's Tax figure can legitimately differ from `BillCalculationResult.tax`
+by the receipt-discount amount — that divergence is intentional.
+
 ## 12. Persistence Behavior
 
 Remote persistence is done through `PartySync` and `syncParty`.
@@ -881,7 +907,7 @@ These are not bugs in this document; they are the current implementation boundar
 - A dropped/hallucinated decimal point on a printed total is only detectable when a row has an independently-read rate to cross-validate against (3+ numeric values). A 2-value row (quantity + total only, no separate rate) has no second number to check it against, so this class of OCR error is only caught, if at all, by the bill-level items-vs-subtotal mismatch check in Review, not row-locally.
 - The OCR pipeline's own `ParsedBill.reconciliation` (whether the receipt's *printed* summary section is internally consistent) is computed but not surfaced in the UI — only the live items-vs-subtotal/total check added to Review (`checkItemsAgainstReceiptTotal`, recomputed as the user edits) is currently shown to the user.
 - If a receipt's total is genuinely never known (only subtotal, or neither), `calculateBillResults` derives tax as `grossTotal - subtotal` (`grossTotal = receiptTotal + receiptDiscount`), which silently becomes `0` rather than "unknown" in that case — pre-existing behavior, more likely to surface now that totals are directly editable in Review. Subtotal / total / receipt discount are now persisted to `META`, so a value entered by one participant carries to anyone who later loads the party.
-- Two discount fields exist and must not be confused: **Discount** is a reduction the group applies on top of the receipt (`totalBill = grossTotal - discount`); **Receipt discount** transcribes a discount already printed on the bill and is added back into `grossTotal` before tax is derived so `total - subtotal` doesn't go negative. Putting a printed receipt discount into the group Discount field would still under-derive tax and mis-total; use Receipt discount for that.
+- Two discount fields exist and must not be confused: **Discount** is a reduction the group applies on top of the receipt (`totalBill = grossTotal - discount`); **Receipt discount** transcribes a discount already printed on the bill and is added back into `grossTotal` before tax is derived so `total - subtotal` doesn't go negative. Putting a printed receipt discount into the group Discount field would still under-derive tax and mis-total; use Receipt discount for that. Note the Settlement Summary card sidesteps the engine's add-back for *display*: it derives its Tax row as `total − subtotal`, so the card's Tax can read lower than `BillCalculationResult.tax` by the receipt-discount amount (see §11, "How the Settlement Summary card presents this").
 - Google sign-in now always shows the account chooser (`prompt: 'select_account'`), but the resulting token is cached for the lifetime of the page load (`AuthContext`) — there's no "switch account" affordance short of a full reload or `signOut()` (which itself isn't wired into any UI yet).
 
 The most valuable next hardening work would be to add stale-row deletion, add tests for the Google Sheet adapter, and wire quadrilateral detection into the image pipeline so perspective correction stops being dead code.
