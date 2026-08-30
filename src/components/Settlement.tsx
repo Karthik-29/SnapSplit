@@ -15,8 +15,9 @@ function Settlement() {
         receiptDiscount: state.receiptDiscount,
         discount: state.discount,
         participantCount: state.participants.length,
+        itemClaims: state.itemClaims,
       }),
-    [calculationResult, state.receiptItems, state.receiptSubtotal, state.receiptTotal, state.receiptDiscount, state.discount, state.participants.length],
+    [calculationResult, state.receiptItems, state.receiptSubtotal, state.receiptTotal, state.receiptDiscount, state.discount, state.participants.length, state.itemClaims],
   );
 
   const checkSymbol = { pass: '✓', warn: '!', fail: '✕' } as const;

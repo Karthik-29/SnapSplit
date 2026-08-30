@@ -1,11 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { runReviewChecks } from '../bill/review';
-import { BillCalculationResult } from '../bill/models';
+import { BillCalculationResult, ItemClaim } from '../bill/models';
 import { BillItem } from '../receipt/models';
 
 const items: BillItem[] = [
   { id: 'item-1', name: 'Tofu Biryani', quantity: 2, unitPrice: 180, totalPrice: 360 },
   { id: 'item-2', name: 'Chana Chaat', quantity: 1, unitPrice: 240, totalPrice: 240 },
+];
+
+// Claims that account for every unit of `items` (item-1 x2, item-2 x1).
+const fullyClaimed: ItemClaim[] = [
+  { itemId: 'item-1', mode: 'individual', sharedWith: [], individualQuantities: { 'user-1': 1, 'user-2': 1 } },
+  { itemId: 'item-2', mode: 'individual', sharedWith: [], individualQuantities: { 'user-3': 1 } },
 ];
 
 const cleanResult: BillCalculationResult = {
@@ -34,6 +40,7 @@ describe('runReviewChecks', () => {
       receiptSubtotal: 600,
       receiptTotal: 600,
       participantCount: 3,
+      itemClaims: fullyClaimed,
     });
 
     expect(checks.every((check) => check.status === 'pass')).toBe(true);
@@ -141,5 +148,70 @@ describe('runReviewChecks', () => {
   it('omits the receipt-discount check when none is set', () => {
     const checks = runReviewChecks({ result: cleanResult, items, receiptSubtotal: 600, receiptTotal: 600, participantCount: 3 });
     expect(checks.some((check) => check.id === 'receipt-discount-in-full')).toBe(false);
+  });
+
+  it('passes the all-items-claimed check when every unit is claimed', () => {
+    const checks = runReviewChecks({
+      result: cleanResult,
+      items,
+      receiptSubtotal: 600,
+      receiptTotal: 600,
+      participantCount: 3,
+      itemClaims: fullyClaimed,
+    });
+    expect(statusFor(checks, 'all-items-claimed')).toBe('pass');
+  });
+
+  it('fails the all-items-claimed check when an item is only partly claimed', () => {
+    const partial: ItemClaim[] = [
+      { itemId: 'item-1', mode: 'individual', sharedWith: [], individualQuantities: { 'user-1': 1 } },
+      { itemId: 'item-2', mode: 'individual', sharedWith: [], individualQuantities: { 'user-3': 1 } },
+    ];
+    const checks = runReviewChecks({
+      result: cleanResult,
+      items,
+      receiptSubtotal: 600,
+      receiptTotal: 600,
+      participantCount: 3,
+      itemClaims: partial,
+    });
+    const check = checks.find((entry) => entry.id === 'all-items-claimed');
+    expect(check?.status).toBe('fail');
+    expect(check?.detail).toContain('Tofu Biryani (1 of 2)');
+  });
+
+  it('fails the all-items-claimed check when an item has no claim entry', () => {
+    const checks = runReviewChecks({
+      result: cleanResult,
+      items,
+      receiptSubtotal: 600,
+      receiptTotal: 600,
+      participantCount: 3,
+      itemClaims: [fullyClaimed[0]],
+    });
+    const check = checks.find((entry) => entry.id === 'all-items-claimed');
+    expect(check?.status).toBe('fail');
+    expect(check?.detail).toContain('Chana Chaat');
+  });
+
+  it('passes the all-items-claimed check for an item split as shared', () => {
+    const shared: ItemClaim[] = [
+      { itemId: 'item-1', mode: 'shared', sharedWith: ['user-1', 'user-2'], individualQuantities: {} },
+      { itemId: 'item-2', mode: 'individual', sharedWith: [], individualQuantities: { 'user-3': 1 } },
+    ];
+    const checks = runReviewChecks({
+      result: cleanResult,
+      items,
+      receiptSubtotal: 600,
+      receiptTotal: 600,
+      participantCount: 3,
+      itemClaims: shared,
+    });
+    expect(statusFor(checks, 'all-items-claimed')).toBe('pass');
+  });
+
+  it('omits the all-items-claimed check when no claims are passed', () => {
+    const checks = runReviewChecks({ result: cleanResult, items, receiptSubtotal: 600, receiptTotal: 600, participantCount: 3 });
+    expect(checks.some((check) => check.id === 'all-items-claimed')).toBe(false);
   });
 });

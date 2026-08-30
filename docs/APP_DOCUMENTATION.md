@@ -627,7 +627,7 @@ Calculates the bill summary:
 
 ### `src/bill/review.ts`
 
-`runReviewChecks({ result, items, receiptSubtotal?, receiptTotal?, receiptDiscount?, discount?, participantCount })`
+`runReviewChecks({ result, items, receiptSubtotal?, receiptTotal?, receiptDiscount?, discount?, participantCount, itemClaims? })`
 
 Pure function (mirrors `reconciliation.ts`) that runs a set of arithmetic sanity checks over a finished `BillCalculationResult` for the Settlement ("final review") screen. Returns one `ReviewCheck` (`{ id, label, status: 'pass' | 'warn' | 'fail', detail? }`) per invariant:
 
@@ -640,6 +640,7 @@ Pure function (mirrors `reconciliation.ts`) that runs a set of arithmetic sanity
 | `discount-in-full` | **warn** — the group discount is set but was capped below the requested amount (only emitted when a group discount is set) |
 | `items-match-receipt` | **warn** — `checkItemsAgainstReceiptTotal` reports a mismatch or `totalBelowSubtotal` |
 | `no-over-claimed-items` | **warn** — `result.itemsNeedingReview` is non-empty |
+| `all-items-claimed` | **fail** — some item still has unclaimed quantity (no claim entry, `shared` with nobody, or individual claims summing below `item.quantity`), so participant shares fall short of `totalBill` (only emitted when `itemClaims` is passed) |
 
 `fail` means the numbers genuinely don't reconcile; `warn` means the split still adds up but something upstream is worth a second look. Rendered as a pass/warn/fail list under a **Checks** heading in `Settlement.tsx`.
 

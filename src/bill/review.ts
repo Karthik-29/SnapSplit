@@ -1,5 +1,6 @@
 import { BillItem } from '../receipt/models';
-import { BillCalculationResult, BillDiscount } from './models';
+import { BillCalculationResult, BillDiscount, ItemClaim } from './models';
+import { getRemainingQuantity, getTotalClaimedQuantity } from './claims';
 import { checkItemsAgainstReceiptTotal } from './reconciliation';
 
 export type ReviewCheckStatus = 'pass' | 'warn' | 'fail';
@@ -22,9 +23,10 @@ const TOLERANCE = 0.01;
  * pass/warn/fail list.
  *
  * `fail` means the numbers genuinely don't add up (shares that don't sum to the
- * total, a negative share, no participants). `warn` means the split still adds
- * up but something upstream is worth a second look (items not matching the
- * receipt, an over-claimed item, a discount that had to be capped).
+ * total, a negative share, no participants, an item left unclaimed so the shares
+ * fall short of the bill). `warn` means the split still adds up but something
+ * upstream is worth a second look (items not matching the receipt, an
+ * over-claimed item, a discount that had to be capped).
  */
 export function runReviewChecks(input: {
   result: BillCalculationResult;
@@ -34,8 +36,9 @@ export function runReviewChecks(input: {
   receiptDiscount?: BillDiscount;
   discount?: BillDiscount;
   participantCount: number;
+  itemClaims?: ItemClaim[];
 }): ReviewCheck[] {
-  const { result, items, receiptSubtotal, receiptTotal, receiptDiscount, discount, participantCount } = input;
+  const { result, items, receiptSubtotal, receiptTotal, receiptDiscount, discount, participantCount, itemClaims } = input;
   const subtotalForPercent = receiptSubtotal ?? result.subtotal ?? 0;
   const appliedReceiptDiscount = result.receiptDiscount ?? 0;
   const checks: ReviewCheck[] = [];
@@ -128,6 +131,38 @@ export function runReviewChecks(input: {
         ? undefined
         : `Over-claimed: ${result.itemsNeedingReview.map((item) => item.name).join(', ')}. Shares are capped so they still add up, but fix the claim in Item Claims.`,
   });
+
+  // Unclaimed quantity never gets added to anyone's share, but `totalBill` still
+  // reflects the whole receipt — so a left-behind item shows up only as a vague
+  // `shares-add-up` gap. Name the culprit here.
+  if (itemClaims) {
+    const claimByItemId = new Map(itemClaims.map((claim) => [claim.itemId, claim]));
+    const unclaimed = items
+      .map((item) => {
+        const claim = claimByItemId.get(item.id);
+        if (claim && claim.mode === 'shared' && claim.sharedWith.length > 0) {
+          return { item, remaining: 0 };
+        }
+        const remaining = claim ? getRemainingQuantity(item, claim) : item.quantity;
+        return { item, remaining };
+      })
+      .filter((entry) => entry.remaining > 0);
+    checks.push({
+      id: 'all-items-claimed',
+      label: 'Every item is fully claimed',
+      status: unclaimed.length === 0 ? 'pass' : 'fail',
+      detail:
+        unclaimed.length === 0
+          ? undefined
+          : `Unclaimed: ${unclaimed
+              .map(({ item, remaining }) => {
+                const claim = claimByItemId.get(item.id);
+                const claimed = claim ? getTotalClaimedQuantity(claim) : 0;
+                return claimed > 0 ? `${item.name} (${remaining} of ${item.quantity})` : item.name;
+              })
+              .join(', ')}. Assign the remaining quantity in Item Claims.`,
+    });
+  }
 
   return checks;
 }
